@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BudgetApp</title>
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+</head>
+<body>
+   <h1>Budget App</h1>
+	<h2>Input Form</h2>
+
+        <form method="POST">
+
+            <label for="expense_name">Insert your expense name:</label>
+            <br>
+            {{ form.expense_name }}
+            <br>
+
+            <label for="expense_value">Insert your expense value:</label>
+            <br>
+            {{ form.expense_value }}
+
+            <button name="btn"
+            value="submit_form">Submit</button>
+
+        </form>
+
+        <br>
+        
+        <form method="POST">
+
+            <button name="btn"
+            value="show_db">Show current budget</button>
+
+        </form>
+        
+</body>
+</html>
