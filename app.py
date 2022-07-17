@@ -1,7 +1,5 @@
-from calendar import month
 from flask import Flask, flash, request, render_template, session, redirect, url_for
 from markupsafe import escape
-from wtforms import Form, validators, StringField
 from .db import BudgetDB
 from flask_table import Table, Col
 
@@ -15,14 +13,21 @@ def expenses_main():
     validity_class_value = "form-control is-invalid"
     invalid_feedback_name = ""
     invalid_feedback_value = ""
-    return render_template("index.html", validity_class_name=validity_class_name, validity_class_value=validity_class_value, invalid_feedback_name=invalid_feedback_name, invalid_feedback_value=invalid_feedback_value)
+    input_form_buttom = "nav-link active"
+    current_budget_button = "nav-link"
+    return render_template("index.html", validity_class_name=validity_class_name, validity_class_value=validity_class_value, \
+        invalid_feedback_name=invalid_feedback_name, invalid_feedback_value=invalid_feedback_value, \
+            input_form_buttom=input_form_buttom, current_budget_button=current_budget_button)
 
 @app.route('/', methods=['GET', 'POST'])
 def expense_input():
     if request.form.get("btn") == "submit_form":
         return InputForm.main_input_form()
 
-    elif request.form.get("btn") == "show_db":
+    elif request.form.get("menu_input_form") == "my_input_form":
+        return redirect(url_for('expenses_main'))
+
+    elif request.form.get("menu_current_budget") == "my_current_budget":
         return redirect(url_for('show_db_state'))
 
 
@@ -31,7 +36,12 @@ def show_db_state():
     db_results = ShowBudgetTable.show_budget_table()
     table = db_results[0]
     value_sum = round(db_results[1],2)
-    return render_template("budget_table.html", table=table, value_sum=value_sum)
+
+    input_form_buttom = "nav-link"
+    current_budget_button = "nav-link active"
+
+    return render_template("budget_table.html", table=table, value_sum=value_sum, \
+        input_form_buttom=input_form_buttom, current_budget_button=current_budget_button)
 
 
 @app.route('/db_state', methods=['GET', 'POST'])
@@ -40,13 +50,16 @@ def return_to_input():
         BudgetDB.delete_record(request.form.get("delete_record"))
         return succesfull_message('delete')
 
-    elif request.form.get("btn") == "return_to_input":
+    elif request.form.get("menu_input_form") == "my_input_form":
         return redirect(url_for('expenses_main'))
+
+    elif request.form.get("menu_current_budget") == "my_current_budget":
+        return redirect(url_for('show_db_state'))
 
 
 def succesfull_message(action, **kwargs):
     if action == 'submit':
-        flash("Request submitted succesfully with \n\n name: " + kwargs["name"] + "\n\n and value: " + str(kwargs["value"]))
+        flash("Request submitted succesfully with \n\n name: " + kwargs["name"] + "\n\n and value: " + str(kwargs["value"] + " PLN."))
         return redirect(url_for('expenses_main'))
     elif action == 'delete':
         flash("Record deleted succesfully")
@@ -110,6 +123,7 @@ class InputForm():
     def main_input_form():
         expense_name =  request.form.get("expense_name")
         expense_value = request.form.get("expense_value")
+
         nameValidator = InputFormValidation(expense_name, "expense_name")
         valueValidator = InputFormValidation(expense_value, "expense_value")
 
@@ -127,7 +141,11 @@ class InputForm():
         else:
             validity_class_name = "form-control is-invalid"
             validity_class_value = "form-control is-invalid"
-            return render_template("index.html", validity_class_name=validity_class_name, validity_class_value=validity_class_value, invalid_feedback_name=invalid_feedback_name, invalid_feedback_value=invalid_feedback_value)
+            input_form_buttom = "nav-link active"
+            current_budget_button = "nav-link"
+            return render_template("index.html", validity_class_name=validity_class_name, validity_class_value=validity_class_value, \
+                invalid_feedback_name=invalid_feedback_name, invalid_feedback_value=invalid_feedback_value, \
+                    input_form_buttom=input_form_buttom, current_budget_button=current_budget_button)
 
 
 class ItemTable(Table):

@@ -1,0 +1,13 @@
+.nav-link.active {
+    background-color: #6c757d !important;
+    color: #fff !important
+}
+
+.nav-link {
+    color: #000000 !important
+}
+
+body {
+    margin-left:50px !important;
+    margin-right:50px !important
+}

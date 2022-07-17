@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='table_styles.css') }}" /> -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+{% extends "base.html" %}
 
-    <meta charset="UTF-8">
-    <title>BudgetApp</title>
+{% block head %}
+    {{ super() }}
+
             {% with messages = get_flashed_messages() %}
         {% if messages %}
             <ul class=flashes>
@@ -15,15 +12,11 @@
             </ul>
         {% endif %}
         {% endwith %}
-</head>
+{% endblock %}
 
-<body>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
-    
-    <h1>Budget App</h1>
+{% block content %}
+
     <hr class="text-danger border-2 opacity-50">
-
-    <h2>Budget Status</h2>
 
    <table class="table">
 
@@ -59,11 +52,6 @@
     </tbody>
 
     </table>
-
-    <form method="POST">
-        <button class="btn btn-secondary" name="btn"
-        value="return_to_input">Return to input form</button>
-    </form>
         
-</body>
-</html>
+{% endblock %}
+
