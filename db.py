@@ -1,6 +1,7 @@
 import sqlite3
 
 class BudgetDB:
+
     def insert_row(name, value, **kwargs):
 
         con = sqlite3.connect('example.db')
@@ -15,8 +16,8 @@ class BudgetDB:
         cur.execute("INSERT INTO budget VALUES (?, ?)", (name,value))
         con.commit()
 
-        for row in cur.execute('SELECT * FROM budget'):
-            print(row)
+        # for row in cur.execute('SELECT * FROM budget'):
+        #     print(row)
 
         con.close()
 

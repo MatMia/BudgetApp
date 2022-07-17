@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+
     <title>BudgetApp</title>
             {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -14,21 +16,32 @@
         {% endwith %}
 </head>
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
    <h1>Budget App</h1>
+   <hr class="text-danger border-2 opacity-50">
+
 	<h2>Input Form</h2>
 
         <form method="POST">
 
-            <label for="expense_name">Insert your expense name:</label>
-            <br>
-            {{ form.expense_name }}
-            <br>
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Input your expense name:</label>
+            </div>
+            <div class="mb-3">
+                <input type="text" class="{{validity_class_name}}" name="expense_name" placeholder="Expense Name" required>
+                <div class="invalid-feedback">{{invalid_feedback_name}}</div>
+            </div>
 
-            <label for="expense_value">Insert your expense value:</label>
-            <br>
-            {{ form.expense_value }}
+                <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Input your expense value:</label>
+                </div>
+                <div class="input-group mb-3">
+                <span class="input-group-text">PLN</span>
+                <input type="text" class="{{validity_class_value}}" name="expense_value" placeholder="Expense Value" required>
+                <div class="invalid-feedback">{{invalid_feedback_value}}</div>
+            </div>
 
-            <button name="btn"
+            <button class="btn btn-secondary" name="btn"
             value="submit_form">Submit</button>
 
         </form>
@@ -37,10 +50,10 @@
         
         <form method="POST">
 
-            <button name="btn"
+            <button class="btn btn-secondary" name="btn"
             value="show_db">Show current budget</button>
 
         </form>
-        
+
 </body>
 </html>
