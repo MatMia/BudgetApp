@@ -170,7 +170,6 @@ class ShowBudgetTable():
             value_sum += float(record[1])
             table_results.append(Item(record[0],record[1]))
         table = ItemTable(table_results)
-        # table = table_results
         return (table, value_sum)
 
 if __name__ == "__main__":
