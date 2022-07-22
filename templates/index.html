@@ -16,10 +16,12 @@
 
 
 {% block content %}
-
+        
    <hr class="text-danger border-2 opacity-50">
 
     <form method="POST" autocomplete="off">
+
+
 
             <div class="mb-3">
                 <label for="formGroupExampleInput" class="form-label">Input your expense name:</label>
@@ -28,6 +30,8 @@
                 <input type="text" class="{{validity_class_name}}" name="expense_name" placeholder="Expense Name" required>
                 <div class="invalid-feedback">{{invalid_feedback_name}}</div>
             </div>
+
+
 
 
             <div class="mb-3">
@@ -40,17 +44,100 @@
             </div>
 
 
+
+
             <div class="mb-3">
                 <label for="formGroupExampleInput" class="form-label">Input your expense category:</label>
             </div>
             <div class="input-group mb-3">
                 <label class="input-group-text" for="inputGroupSelect01">Category</label>
-                <select class="form-select" id="inputGroupSelect01" name="expense_category">
-                  <option value="1">One</option>
-                  <option value="2">Two</option>
-                  <option value="3">Three</option>
+                <select class="form-select" id='expense_category' name="expense_category" value="my_category" required>
+                    {% for category in categories.items %}
+                  <option>{{category.name}}</option>
+                  {% endfor %}
                 </select>
               </div>
+
+
+
+            <script>
+                const selectElement = document.getElementById('expense_category');
+
+                $.ajax({
+                    url:"/input_sub_category",
+                    type:"POST",
+                    data: selectElement.value,
+                    success: function(data) {
+                    var name, select, option;
+                    
+                    select = document.getElementById('expense_sub_category');
+                    
+                    // Clear the old options
+                    select.options.length = 0;
+
+                    // Load the new options
+                    $.each(data, function(key, value) {
+                        select.options.add(new Option(key, key));
+                    });
+                }}
+                );
+
+                selectElement.addEventListener('change', (event) => {
+                    $.ajax({
+                    url:"/input_sub_category",
+                    type:"POST",
+                    data: selectElement.value,
+                    success: function(data) {
+                    var name, select, option;
+                    
+                    select = document.getElementById('expense_sub_category');
+                    
+                    // Clear the old options
+                    select.options.length = 0;
+                    // Load the new options
+                    $.each(data, function(key, value) {
+                        select.options.add(new Option(key, key));
+                    });
+            }}
+            );
+            })
+            </script>
+
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Input your expense sub-category:</label>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Sub-category</label>
+                <select class="form-select" id='expense_sub_category' name="expense_sub_category" value="my_sub_category">
+                </select>
+            </div>
+
+    
+
+            
+                   <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Input your expense date:</label>
+                    </div>
+                     <div class="form-group">
+                       <input class="form-control" id="expense_date" name="expense_date" placeholder="MM/DD/YYY" type="text" required/>
+                     </div>
+
+                <script>
+                    $(document).ready(function(){
+                      var date_input=$('input[name="expense_date"]');
+                      var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+                      var options={
+                        format: 'mm/dd/yyyy',
+                        container: container,
+                        todayHighlight: true,
+                        autoclose: true,
+                      };
+                      date_input.datepicker(options);
+                    })
+                </script>
+
+            <hr>
 
             <button class="btn btn-secondary" name="btn"
             value="submit_form">Submit</button>

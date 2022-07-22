@@ -2,7 +2,7 @@ import sqlite3
 
 class BudgetDB:
 
-    def insert_row(name, value, **kwargs):
+    def insert_row(name, value, category, sub_category, date, **kwargs):
 
         con = sqlite3.connect('budget.db')
         cur = con.cursor()
@@ -11,14 +11,10 @@ class BudgetDB:
             cur.execute('''DROP TABLE IF EXISTS budget''')
 
             cur.execute('''CREATE TABLE budget
-                        (name, value)''')
+                        (name TEXT, value REAL, category TEXT, sub_category TEXT, date TEXT)''')
 
-        cur.execute("INSERT INTO budget VALUES (?, ?)", (name,value))
+        cur.execute("INSERT INTO budget VALUES (?, ?, ?, ?, ?)", (name, value, category, sub_category, date))
         con.commit()
-
-        # for row in cur.execute('SELECT * FROM budget'):
-        #     print(row)
-
         con.close()
 
     def show_db():
@@ -28,7 +24,7 @@ class BudgetDB:
         db_results = []
 
         for row in cur.execute('''SELECT * FROM budget
-            ORDER BY name'''):
+            ORDER BY date'''):
             db_results.append(row)
 
         con.close()
@@ -48,7 +44,7 @@ class BudgetDB:
 
 class CategoriesDB:
 
-    def insert_row(name, **kwargs):
+    def insert_row(category, **kwargs):
 
         con = sqlite3.connect('categories.db')
         cur = con.cursor()
@@ -59,7 +55,7 @@ class CategoriesDB:
             cur.execute('''CREATE TABLE categories
                         (name)''')
 
-        cur.execute("INSERT INTO categories VALUES (?)", (name,))
+        cur.execute("INSERT INTO categories VALUES (?)", (category,))
         con.commit()
         con.close()
 
@@ -77,12 +73,64 @@ class CategoriesDB:
         
         return db_results
 
-    def delete_record(name):
-        print(name)
+    #delete required category and all connected sub-categories
+    def delete_record(category):
+
+        #delete category
         con = sqlite3.connect('categories.db')
         cur = con.cursor()
 
         cur.execute('''DELETE FROM categories 
-        WHERE name = ?''', (name,))
+        WHERE name = ?''', (category,))
+        con.commit()
+        con.close()
+
+        con = sqlite3.connect('sub_categories.db')
+        cur = con.cursor()
+
+        #delete sub-categories
+        cur.execute('''DELETE FROM sub_categories 
+        WHERE category = (?)''', (category,))
+        con.commit()
+        con.close()
+
+class SubCategoriesDB:
+
+    def insert_row(category, sub_category, **kwargs):
+
+        con = sqlite3.connect('sub_categories.db')
+        cur = con.cursor()
+
+        if 'clear_db' in kwargs and kwargs['clear_db'] == 'Y':
+            cur.execute('''DROP TABLE IF EXISTS sub_categories''')
+
+            cur.execute('''CREATE TABLE sub_categories
+                        (category, sub_category)''')
+
+        cur.execute("INSERT INTO sub_categories VALUES (?, ?)", (category, sub_category))
+        con.commit()
+        con.close()
+
+    def show_db(category):
+        con = sqlite3.connect('sub_categories.db')
+        cur = con.cursor()
+
+        db_results = []
+
+        for row in cur.execute('''SELECT sub_category FROM sub_categories
+            WHERE category = (?)
+            ORDER BY sub_category''', (category,)):
+            db_results.append(row)
+
+        con.close()
+        
+        return db_results
+
+    def delete_record(category, sub_category):
+        con = sqlite3.connect('sub_categories.db')
+        cur = con.cursor()
+
+        cur.execute('''DELETE FROM sub_categories 
+        WHERE category = ? and sub_category = ?''', (category, sub_category))
         con.commit()
         con.close()

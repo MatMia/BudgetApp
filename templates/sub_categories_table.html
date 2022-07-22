@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+{% endblock %}
+
+{% block content %}
+
+<h3>Category: {{category}}</h3>
+    <hr class="text-danger border-2 opacity-50">
+
+   <table class="table">
+
+    <thead>
+    <tr>
+        <th>sub-category</th>
+        <th></th>
+    </tr>
+    </thead>
+    
+    <tbody>
+        
+        {% for row in table.items %}
+        <tr>
+            <td>{{row.name}}</td>
+            <td>
+                <form method="POST">
+                <button class="btn btn-light" name="delete_sub_category_record" 
+                value={{row.name}}>Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+
+    </tbody>
+
+    </table>
+
+    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="@mdo">Add sub-category</button>
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">New sub-category</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" autocomplete="off">
+            <div class="modal-body">
+                <div class="mb-3">
+                  <label for="sub_category_name" class="col-form-label">Sub-category name:</label>
+                  <input type="text" class="form-control" name="sub_category_name" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" name="add_sub_category" value="my_sub_category">Submit</button>
+            </div>
+            </form>
+          </div>
+      </div>
+    </div>
+
+    <div style='float: right;'>
+        <form method="POST">
+          <button class="btn btn-secondary" name="btn"
+          value="return_to_categories">Return to categories</button>
+          </form>
+        </div>
+
+
+{% endblock %}
+

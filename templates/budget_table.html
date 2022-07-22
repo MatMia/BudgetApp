@@ -23,8 +23,11 @@
     <thead>
     <tr>
         <th>name</th>
-        <th>value</th>
-        <th>button</th>
+        <th>value [PLN]</th>
+        <th>category</th>
+        <th>sub-category</th>
+        <th>date</th>
+        <th></th>
     </tr>
     </thead>
     
@@ -34,6 +37,9 @@
         <tr>
             <td>{{row.name}}</td>
             <td>{{row.value}}</td>
+            <td>{{row.category}}</td>
+            <td>{{row.sub_category}}</td>
+            <td>{{row.date}}</td>
             <td>
                 <form method="POST">
                 <button class="btn btn-light" name="delete_record" 
