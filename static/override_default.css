@@ -11,3 +11,29 @@ body {
     margin-left:50px !important;
     margin-right:50px !important
 }
+
+.pagination-page-info {
+    padding: .6em;
+    padding-left: 0;
+    width: 40em;
+    margin: .5em;
+    margin-left: 0;
+    font-size: 12px;
+}
+.pagination-page-info b {
+    color: black;
+    background: white;
+    padding-left: 2px;
+    padding: .1em .25em;
+    font-size: 150%;
+}
+
+.active > .page-link {
+    background: #6c757d !important;
+}
+
+.sub_cat_chart {
+    position: absolute;
+    top:155px;
+    right: 700px;
+}

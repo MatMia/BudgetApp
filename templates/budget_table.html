@@ -58,6 +58,15 @@
     </tbody>
 
     </table>
-        
+    {{ pagination.info }}
+    {{ pagination.links }}
+
+    <div style='float: right;'>
+        <form method="POST">
+          <button class="btn btn-secondary" name="btn"
+          value="charts">Go to charts</button>
+          </form>
+        </div>
+
 {% endblock %}
 

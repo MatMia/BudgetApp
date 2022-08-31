@@ -2,11 +2,12 @@ from flask import Flask, flash, request, render_template, session, redirect, url
 from markupsafe import escape
 from .db import BudgetDB, CategoriesDB, SubCategoriesDB
 from flask_table import Table, Col
+from flask_paginate import Pagination, get_page_parameter
+import random
 
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
-
 
 #main page and input form endpoints
 @app.route("/")
@@ -47,12 +48,24 @@ def input_sub_category():
 
 
 #budget status endpoints
+
 @app.route("/db_state")
 def show_db_state():
-    db_results = ShowBudgetTable.show_budget_table()
-    table = db_results[0]
-    value_sum = round(db_results[1],2)
-    return render_template("budget_table.html", table=table, value_sum=value_sum, \
+
+    total_db_results = ShowBudgetTable.show_budget_table()
+    total = total_db_results[2]
+    value_sum = round(total_db_results[1],2)
+
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 10
+    offset = (page - 1) * per_page
+    pagination = Pagination(page=page, per_page=per_page, total=total)
+
+    paged_db_results = ShowBudgetTable.show_budget_table(limit=per_page, offset=offset)
+    table = paged_db_results[0]
+    
+
+    return render_template("budget_table.html", table=table, value_sum=value_sum, pagination=pagination, \
         input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link")
 
 
@@ -71,6 +84,57 @@ def return_to_input():
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_categories'))
 
+    elif request.form.get("btn") == "charts":
+        return redirect(url_for('pie'))
+
+
+
+
+#display pie charts
+@app.route('/db_state/pie')
+def pie():
+
+    pie_chart_data = ShowChartsData.show_pie_chart()
+    labels = []
+    values = []
+    for row in pie_chart_data:
+        labels.append(row[0])
+        values.append(row[1])
+
+    number_of_colors = len(labels)
+    colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                for i in range(number_of_colors)]
+
+    return render_template('charts.html', title='test_charts', labels=labels, values=values, colors=colors, \
+        input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link")
+
+
+@app.route('/db_state/pie', methods=['GET', 'POST'])
+def pie_charts():
+    if request.form.get("menu_input_form") == "my_input_form":
+        return redirect(url_for('expenses_main'))
+
+    elif request.form.get("menu_current_budget") == "my_current_budget":
+        return redirect(url_for('show_db_state'))
+
+    elif request.form.get("menu_categories") == "my_categories":
+        return redirect(url_for('show_db_categories'))
+
+    elif request.form.get("btn") == "return_to_budget":
+            return redirect(url_for('show_db_state'))
+
+#read sub-category pie chart data - AJAX
+@app.route('/sub_category_chart', methods=['GET', 'POST'])
+def sub_category_chart():
+        category = [name for name, value in request.form.to_dict().items()]
+        sub_cat_chart_data = ShowChartsData.sub_cat_chart_data(category)
+        dict_without_colors = {}
+
+        #pack data into dict
+        for row in sub_cat_chart_data:
+            dict_without_colors.update({row[0]:row[1]})
+
+        return(dict_without_colors)
 
 
 
@@ -329,18 +393,23 @@ class SubCategoriesItem(object):
 
 
 
-#show DB states
+#show DB tables
 class ShowBudgetTable():
 
-    def show_budget_table():
-        db_results = BudgetDB.show_db()
+    def show_budget_table(**kwargs):
+        if 'limit' in kwargs:
+            db_results = BudgetDB.show_db(limit=kwargs['limit'], offset=kwargs['offset'])
+        else:
+            db_results = BudgetDB.show_db()
+
+        total_count = len(db_results)
         table_results = []
         value_sum = 0
         for record in db_results:
             value_sum += float(record[1])
             table_results.append(BudgetItem(record[0],record[1],record[2],record[3],record[4]))
         table = BudgetItemTable(table_results)
-        return (table, value_sum)
+        return (table, value_sum, total_count)
 
     def show_categories_table():
         db_results = CategoriesDB.show_db()
@@ -358,7 +427,13 @@ class ShowBudgetTable():
         table = SubCategoriesItemTable(table_results)
         return (table)
 
-
+class ShowChartsData():
+    def show_pie_chart():
+        db_results = BudgetDB.show_db(pie_chart='pie_chart')
+        return(db_results)
+    def sub_cat_chart_data(category):
+        db_results = BudgetDB.show_db(sub_cat_pie_chart=category)
+        return(db_results)    
 
 #main application handler
 if __name__ == "__main__":

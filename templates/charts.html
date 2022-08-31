@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+
+<hr class="text-danger border-2 opacity-50">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+
+<canvas id="chart" width="600" height="400"></canvas>
+<div class="sub_cat_chart">
+<canvas hidden id="sub_cat_chart" width="600" height="400"></canvas>
+</div>
+
+<script>
+
+  // sub_category chart placeholder
+    var sub_cat_chart = new Chart(document.getElementById("sub_cat_chart"), {
+        type: 'pie',
+        data: {
+        labels: [],
+        datasets: [{
+            label: "Series 01",
+            backgroundColor: [],
+            data: []
+        }]
+        },
+        options: {
+        title: {
+            display: true,
+            text: 'Budget by sub-category [in PLN]'
+        },
+        legend: {
+            labels: {
+            /* here one can adjust the legend's labels, if required */
+            // generateLabels: function(chart) {}
+            }
+        },
+        responsive: false
+        }
+    })
+
+    
+    // main chart by category
+    var labels = {{labels|safe}};
+    var values = {{values|safe}};
+    var colors = {{colors|safe}};
+
+    var chart = new Chart(document.getElementById("chart"), {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Series 01",
+        backgroundColor: colors,
+        data: values
+      }]
+    },
+    options: {
+      title: {
+        display: true,
+        text: 'Budget by category [in PLN]'
+      },
+      legend: {
+        labels: {
+          /* here one can adjust the legend's labels, if required */
+          // generateLabels: function(chart) {}
+        }
+      },
+      responsive: false,
+      onClick: (e, item) => {
+        $.ajax({
+                url:"/sub_category_chart",
+                type:"POST",
+                data: labels[item[0]._index],
+                success: function(data) {
+                    canvas = document.getElementById("sub_cat_chart");
+                    canvas.removeAttribute("hidden");
+                    var sub_cat_labels = [];
+                    var sub_cat_colors = [];
+                    var sub_cat_values = [];
+
+                    var dict_length = Object.keys(data).length
+                    for (var i = 0; i < dict_length; i++) {
+                      sub_cat_colors.push('#' + Math.floor(Math.random()*16777215).toString(16));
+                    } 
+                    
+                    $.each(data, function(key, value) {
+                      sub_cat_labels.push(key);
+                      sub_cat_values.push(value);
+                    });
+
+                    sub_cat_chart.data.datasets[0].data = sub_cat_values;
+                    sub_cat_chart.data.labels = sub_cat_labels;
+                    sub_cat_chart.data.datasets[0].backgroundColor = sub_cat_colors;
+                    sub_cat_chart.options.title.text = 'Budget by sub-category: ' + labels[item[0]._index] + ' [in PLN]';
+
+                    sub_cat_chart.update();
+
+            }}
+            );
+        }
+    }
+});
+
+</script>
+
+
+<div style='float: right;'>
+    <form method="POST">
+      <button class="btn btn-secondary" name="btn"
+      value="return_to_budget">Return to budget</button>
+      </form>
+    </div>
+
+
+  {% endblock %}

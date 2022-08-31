@@ -17,15 +17,30 @@ class BudgetDB:
         con.commit()
         con.close()
 
-    def show_db():
+    def show_db(**kwargs):
         con = sqlite3.connect('budget.db')
         cur = con.cursor()
 
         db_results = []
 
-        for row in cur.execute('''SELECT * FROM budget
-            ORDER BY date'''):
-            db_results.append(row)
+        if 'limit' in kwargs:
+            for row in cur.execute('''SELECT * FROM budget
+                ORDER BY date LIMIT ? OFFSET ?''', (kwargs['limit'], kwargs['offset'])):
+                db_results.append(row)
+        elif 'pie_chart' in kwargs:
+            for row in cur.execute('''SELECT category, round(sum(value),2) FROM budget
+                GROUP BY category'''):
+                db_results.append(row)
+        elif 'sub_cat_pie_chart' in kwargs:
+            category = kwargs['sub_cat_pie_chart']
+            for row in cur.execute('''SELECT sub_category, round(sum(value),2) FROM budget
+                WHERE category = ?
+                GROUP BY sub_category''', (str(category[0]),)):
+                db_results.append(row)    
+        else:
+            for row in cur.execute('''SELECT * FROM budget
+                ORDER BY date'''):
+                db_results.append(row)
 
         con.close()
         
