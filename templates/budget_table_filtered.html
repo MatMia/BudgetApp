@@ -22,12 +22,12 @@
 
     <label for="formGroupExampleInput" class="form-label">Date from:</label>
      <div class="form-group">
-       <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" type="text" required/>
+       <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" value = {{date_from}} type="text" required/>
      </div>
 
         <label for="formGroupExampleInput" class="form-label">Date to:</label>
          <div class="form-group">
-           <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" type="text" required/>
+           <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" value = {{date_to}} type="text" required/>
          </div>
 
 <script>
@@ -50,7 +50,9 @@
       <button class="btn btn-secondary" name="apply_date_filters"
       value="my_apply_date_filters">Apply filters</button>
 
-      </form>
+      <button class="btn btn-secondary" name="clear_date_filters"
+      value="my_clear_date_filters" style="float: right;" >Clear filters</button>
+    </form>
 
 
     <hr class="text-danger border-2 opacity-50">

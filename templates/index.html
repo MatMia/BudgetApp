@@ -120,7 +120,7 @@
                     <label for="formGroupExampleInput" class="form-label">Input your expense date:</label>
                     </div>
                      <div class="form-group">
-                       <input class="form-control" id="expense_date" name="expense_date" placeholder="MM/DD/YYY" type="text" required/>
+                       <input class="form-control" id="expense_date" name="expense_date" placeholder="YYYY-MM-DD" type="text" required/>
                      </div>
 
                 <script>
@@ -128,7 +128,7 @@
                       var date_input=$('input[name="expense_date"]');
                       var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
                       var options={
-                        format: 'mm/dd/yyyy',
+                        format: 'yyyy-mm-dd',
                         container: container,
                         todayHighlight: true,
                         autoclose: true,
