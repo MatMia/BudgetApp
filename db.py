@@ -74,6 +74,29 @@ class BudgetDB:
         con.close()
         return db_results
 
+
+    def sub_category_data_table(category, sub_category, **kwargs):
+        con = sqlite3.connect('budget.db')
+        cur = con.cursor()
+
+        db_results = []
+        
+        if 'limit' in kwargs:
+            for row in cur.execute('''SELECT * FROM budget
+                WHERE category = ? and sub_category = ?
+                ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['limit'], kwargs['offset'])):
+                    db_results.append(row[1:])
+        else:
+            for row in cur.execute('''SELECT * FROM budget
+                WHERE category = ? and sub_category = ?
+                ORDER BY date''', (category, sub_category)):
+                    db_results.append(row)
+
+        con.close()
+        return db_results
+
+
+
     def delete_record(delete_id):
         print(delete_id)
         con = sqlite3.connect('budget.db')

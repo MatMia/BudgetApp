@@ -245,6 +245,32 @@ def filtered_sub_category_chart():
     return(dict_without_colors)
 
 
+@app.route('/sub_category_data_table', methods=['GET', 'POST'])
+def get_sub_cat_data_table():
+    posted_data = []
+    sub_cat_data_table_dict = {}
+    for name, value in request.form.items():
+        posted_data.append(value)
+    category = posted_data[0]
+    sub_category = posted_data[1]
+
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category)[1]
+    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, limit=per_page, offset=offset)[0]
+    pagination = Pagination(page=page, per_page=per_page, total=total_count)
+
+    # print(sub_category_data)
+    #pack data into dict
+    for i, row in enumerate(sub_category_data):
+        sub_cat_data_table_dict.update({i:row})
+
+    return(sub_cat_data_table_dict)
+
+
+
 
 
 #categories endpoints
@@ -607,6 +633,15 @@ class ShowBudgetTable():
             table_results.append(SubCategoriesItem(record[0]))
         table = SubCategoriesItemTable(table_results)
         return (table)
+
+    def show_sub_category_data_table(category, sub_category, **kwargs):
+        if 'limit' in kwargs:
+            db_results = BudgetDB.sub_category_data_table(category, sub_category, limit=kwargs['limit'],offset=kwargs['offset'])
+        else:
+            db_results = BudgetDB.sub_category_data_table(category, sub_category)
+            
+        total_count = len(db_results)
+        return(db_results, total_count)
 
 class ShowChartsData():
     def show_pie_chart(**kwargs):
