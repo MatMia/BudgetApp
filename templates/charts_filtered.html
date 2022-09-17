@@ -2,6 +2,15 @@
 
 {% block head %}
     {{ super() }}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+        {{ message }}
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
 {% endblock %}
 
 {% block content %}
@@ -10,13 +19,59 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
 
+
+
+
+
+<form method="POST" autocomplete="off">
+
+  <label for="formGroupExampleInput" class="form-label">Date from:</label>
+   <div class="form-group">
+     <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" value = {{date_from}} type="text" required/>
+   </div>
+
+      <label for="formGroupExampleInput" class="form-label">Date to:</label>
+       <div class="form-group">
+         <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" value = {{date_to}} type="text" required/>
+       </div>
+
+<script>
+  $(document).ready(function(){
+    var date_from=$('input[name="date_from"]');
+    var date_to=$('input[name="date_to"]');
+    var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+    var options={
+      format: 'yyyy-mm-dd',
+      container: container,
+      todayHighlight: true,
+      autoclose: true,
+    };
+    date_from.datepicker(options);
+    date_to.datepicker(options);
+  })
+</script>
+
+  <br />
+    <button class="btn btn-secondary" name="apply_date_filters"
+    value="my_apply_date_filters">Apply filters</button>
+
+    <button class="btn btn-secondary" name="clear_date_filters"
+    value="my_clear_date_filters" style="float: right;" >Clear filters</button>
+  </form>
+
+
+
+
+
+
 <canvas id="chart" width="600" height="400"></canvas>
 <div class="sub_cat_chart">
 <canvas hidden id="sub_cat_chart" width="600" height="400"></canvas>
 </div>
 
 <script>
-
+  var activeCategory
+  
   // sub_category chart placeholder
     var sub_cat_chart = new Chart(document.getElementById("sub_cat_chart"), {
         type: 'pie',
@@ -39,7 +94,25 @@
             // generateLabels: function(chart) {}
             }
         },
-        responsive: false
+        responsive: false,
+        onClick: (e, item) => {
+          $.ajax({
+            url: "/filtered_sub_category_data_table",
+            type: "POST",
+            data:  {category: activeCategory, sub_category: sub_cat_chart.data.labels[item[0]._index], date_from: date_from, date_to: date_to},
+            success: function(data) {
+              var HTML = "<table class='table'> <thead><tr><td style='display:none;''>input_uuid</td><th>name</th><th>value [PLN]</th><th>category</th><th>sub-category</th><th>date</th><th></th></tr></thead><tbody>";
+                $.each(data, function(key, value) {
+                    HTML += "<tr>"
+                      $.each(value, function(i, inner_value) {
+                        HTML += "<td>" + inner_value + "</td>"
+                      });  
+                    HTML += "</tr>"                      
+            })
+            document.getElementById('myTable').innerHTML = HTML
+          }
+        })
+        }
         }
     })
 
@@ -102,6 +175,8 @@
 
                     sub_cat_chart.update();
 
+                    activeCategory = labels[item[0]._index]
+
             }}
             );
         }
@@ -110,11 +185,12 @@
 
 </script>
 
+<div id="myTable"></div>
 
 <div style='float: right;'>
     <form method="POST">
       <button class="btn btn-secondary" name="btn"
-      value="return_to_budget">Return to budget</button>
+      value="return_to_budget" id="return_to_budget_btn">Return to budget</button>
       </form>
     </div>
 

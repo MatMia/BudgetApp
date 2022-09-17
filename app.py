@@ -148,7 +148,7 @@ def show_db_state_dates_filters(filters):
 
 
 
-#display pie charts
+#display no filtered pie charts
 @app.route('/db_state/pie')
 def pie():
 
@@ -179,7 +179,15 @@ def pie_charts():
         return redirect(url_for('show_db_categories'))
 
     elif request.form.get("btn") == "return_to_budget":
-            return redirect(url_for('show_db_state'))
+        return redirect(url_for('show_db_state'))
+
+    elif request.form.get("apply_date_filters"):
+        date_from = request.form.get("date_from")
+        date_to = request.form.get("date_to")
+        if Filters.budget_filters(date_from, date_to) is True:
+            return redirect(url_for('filtered_pie', filters=[date_from, date_to]))          
+        else:
+            return redirect(url_for('pie'))
 
 #read sub-category pie chart data - AJAX
 @app.route('/sub_category_chart', methods=['GET', 'POST'])
@@ -194,11 +202,38 @@ def sub_category_chart():
 
         return(dict_without_colors)
 
+@app.route('/sub_category_data_table', methods=['GET', 'POST'])
+def get_sub_cat_data_table():
+    posted_data = []
+    sub_cat_data_table_dict = {}
+    for name, value in request.form.items():
+        posted_data.append(value)
+    category = posted_data[0]
+    sub_category = posted_data[1]
+
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category)[1]
+    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, limit=per_page, offset=offset)[0]
+    pagination = Pagination(page=page, per_page=per_page, total=total_count)
+
+    #pack data into dict
+    for i, row in enumerate(sub_category_data):
+        sub_cat_data_table_dict.update({i:row})
+
+    return(sub_cat_data_table_dict)
+
+
+
+
 #display filtered pie charts
 @app.route('/pie/<filters>', methods=['GET', 'POST'])
 def filtered_pie(filters):
     date_from = filters[2:12]
     date_to =  filters[16:26]
+    succesfull_filters(date_from, date_to)
     
     if request.form.get("menu_input_form") == "my_input_form":
         return redirect(url_for('expenses_main'))
@@ -209,8 +244,22 @@ def filtered_pie(filters):
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_categories'))
 
+    elif request.form.get("apply_date_filters"):
+        updated_date_from = request.form.get("date_from")
+        updated_date_to = request.form.get("date_to")
+        session['_flashes'].clear()
+        if Filters.budget_filters(updated_date_from, updated_date_to) is True:
+            return redirect(url_for('filtered_pie', filters=[updated_date_from, updated_date_to]))
+        else:
+            return redirect(url_for('filtered_pie', filters=[date_from, date_to]))
+
+    elif request.form.get("clear_date_filters") == 'my_clear_date_filters':
+        session['_flashes'].clear()
+        return redirect(url_for('pie'))
+
     elif request.form.get("btn") == "return_to_budget":
-            return redirect(url_for('show_db_state'))
+            session['_flashes'].clear()
+            return redirect(url_for('show_db_state_dates_filters', filters=[date_from, date_to]))
     else:
         pie_chart_data = ShowChartsData.show_pie_chart(date_from=date_from, date_to=date_to)
         labels = []
@@ -245,24 +294,25 @@ def filtered_sub_category_chart():
     return(dict_without_colors)
 
 
-@app.route('/sub_category_data_table', methods=['GET', 'POST'])
-def get_sub_cat_data_table():
+@app.route('/filtered_sub_category_data_table', methods=['GET', 'POST'])
+def get_filtered_sub_cat_data_table():
     posted_data = []
     sub_cat_data_table_dict = {}
     for name, value in request.form.items():
         posted_data.append(value)
     category = posted_data[0]
     sub_category = posted_data[1]
+    date_from = posted_data[2]
+    date_to = posted_data[3]
 
     page = request.args.get(get_page_parameter(), type=int, default=1)
     per_page = 10
     offset = (page - 1) * per_page
 
-    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category)[1]
-    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, limit=per_page, offset=offset)[0]
+    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category, date_from=date_from, date_to=date_to)[1]
+    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, date_from=date_from, date_to=date_to, limit=per_page, offset=offset)[0]
     pagination = Pagination(page=page, per_page=per_page, total=total_count)
 
-    # print(sub_category_data)
     #pack data into dict
     for i, row in enumerate(sub_category_data):
         sub_cat_data_table_dict.update({i:row})
@@ -366,6 +416,8 @@ def succesfull_filters(date_from, date_to):
     flash("Filters (Date From: " + str(date_from) + ", Date To: " + str(date_to) + ") have been applied.")
 
 
+
+
 #insert records to DB
 def insert_to_budget_db(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_date):
     BudgetDB.insert_row(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_date, clear_db='N')
@@ -432,7 +484,7 @@ class InputFormValidation(object):
                 return True    
 
 
-#input form validation
+#filters validation
 class BudgetFiltersValidation(object):
 
     def __init__(self, date_from, date_to):
@@ -636,7 +688,12 @@ class ShowBudgetTable():
 
     def show_sub_category_data_table(category, sub_category, **kwargs):
         if 'limit' in kwargs:
-            db_results = BudgetDB.sub_category_data_table(category, sub_category, limit=kwargs['limit'],offset=kwargs['offset'])
+            if 'date_from' in kwargs:
+                db_results = BudgetDB.sub_category_data_table(category, sub_category, date_from=kwargs['date_from'],date_to=kwargs['date_to'], limit=kwargs['limit'],offset=kwargs['offset'])
+            else:
+                db_results = BudgetDB.sub_category_data_table(category, sub_category, limit=kwargs['limit'],offset=kwargs['offset'])
+        elif 'date_from' in kwargs:
+            db_results = BudgetDB.sub_category_data_table(category, sub_category, date_from=kwargs['date_from'],date_to=kwargs['date_to'])
         else:
             db_results = BudgetDB.sub_category_data_table(category, sub_category)
             

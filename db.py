@@ -1,3 +1,4 @@
+from datetime import datetime
 import sqlite3
 
 class BudgetDB:
@@ -82,13 +83,24 @@ class BudgetDB:
         db_results = []
         
         if 'limit' in kwargs:
+            if 'date_from' in kwargs:
+                for row in cur.execute('''SELECT * FROM budget
+                    WHERE category = ? and sub_category = ? and date BETWEEN ? and ?
+                    ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['date_from'], kwargs['date_to'], kwargs['limit'], kwargs['offset'])):
+                        db_results.append(row[1:])
+            else:
+                for row in cur.execute('''SELECT * FROM budget
+                    WHERE category = ? and sub_category = ?
+                    ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['limit'], kwargs['offset'])):
+                        db_results.append(row[1:])      
+        elif 'date_from' in kwargs:
             for row in cur.execute('''SELECT * FROM budget
-                WHERE category = ? and sub_category = ?
-                ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['limit'], kwargs['offset'])):
-                    db_results.append(row[1:])
+                WHERE category = ? and sub_category = ? and date BETWEEN ? and ?
+                ORDER BY date''', (category, sub_category, kwargs['date_from'], kwargs['date_to'])):
+                    db_results.append(row)
         else:
             for row in cur.execute('''SELECT * FROM budget
-                WHERE category = ? and sub_category = ?
+                WHERE category = ? and sub_category = ? 
                 ORDER BY date''', (category, sub_category)):
                     db_results.append(row)
 
