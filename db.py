@@ -3,7 +3,7 @@ import sqlite3
 
 class BudgetDB:
 
-    def insert_row(input_uuid, name, value, category, sub_category, date, **kwargs):
+    def insert_row(input_uuid, name, value, category, sub_category, expense_type, date, **kwargs):
 
         con = sqlite3.connect('budget.db')
         cur = con.cursor()
@@ -12,9 +12,21 @@ class BudgetDB:
             cur.execute('''DROP TABLE IF EXISTS budget''')
 
             cur.execute('''CREATE TABLE budget
-                        (id TEXT, name TEXT, value REAL, category TEXT, sub_category TEXT, date TEXT)''')
+                        (id TEXT, name TEXT, value REAL, category TEXT, sub_category TEXT, expense_type TEXT, date TEXT)''')
 
-        cur.execute("INSERT INTO budget VALUES (?, ?, ?, ?, ?, strftime(?))", (input_uuid, name, value, category, sub_category, date))
+        cur.execute("INSERT INTO budget VALUES (?, ?, ?, ?, ?, ?, strftime(?))", (input_uuid, name, value, category, sub_category, expense_type, date))
+        con.commit()
+        con.close()
+
+    def clear_db():
+        con = sqlite3.connect('budget.db')
+        cur = con.cursor()
+
+        cur.execute('''DROP TABLE IF EXISTS budget''')
+
+        cur.execute('''CREATE TABLE budget
+                    (id TEXT, name TEXT, value REAL, category TEXT, sub_category TEXT, expense_type TEXT, date TEXT)''')
+                    
         con.commit()
         con.close()
 
@@ -120,9 +132,71 @@ class BudgetDB:
         con.close()
 
 
+class TypesDB:
+    def insert_row(type, **kwargs):
+
+        con = sqlite3.connect('types.db')
+        cur = con.cursor()
+
+        if 'clear_db' in kwargs and kwargs['clear_db'] == 'Y':
+            cur.execute('''DROP TABLE IF EXISTS types''')
+
+            cur.execute('''CREATE TABLE types
+                        (name)''')
+
+        cur.execute("INSERT INTO types VALUES (?)", (type,))
+        con.commit()
+        con.close()
+
+    def show_db():
+        con = sqlite3.connect('types.db')
+        cur = con.cursor()
+
+        db_results = []
+
+        for row in cur.execute('''SELECT * FROM types
+            ORDER BY name'''):
+            db_results.append(row)
+
+        con.close()
+        
+        return db_results
+
+    #delete required type and all connected categories
+    def delete_record(type):
+
+        #delete type
+        con = sqlite3.connect('types.db')
+        cur = con.cursor()
+
+        cur.execute('''DELETE FROM types 
+        WHERE name = ?''', (type,))
+        con.commit()
+        con.close()
+
+        #delete corresponding categories
+
+        con = sqlite3.connect('categories.db')
+        cur = con.cursor()
+
+        cur.execute('''DELETE FROM categories 
+        WHERE type = (?)''', (type,))
+        con.commit()
+        con.close()
+
+        #delete corresponding sub_categories
+
+        con = sqlite3.connect('sub_categories.db')
+        cur = con.cursor()
+
+        cur.execute('''DELETE FROM sub_categories 
+        WHERE type = (?)''', (type,))
+        con.commit()
+        con.close()
+
 class CategoriesDB:
 
-    def insert_row(category, **kwargs):
+    def insert_row(category, type, **kwargs):
 
         con = sqlite3.connect('categories.db')
         cur = con.cursor()
@@ -131,35 +205,41 @@ class CategoriesDB:
             cur.execute('''DROP TABLE IF EXISTS categories''')
 
             cur.execute('''CREATE TABLE categories
-                        (name)''')
+                        (name TEXT, type TEXT)''')
 
-        cur.execute("INSERT INTO categories VALUES (?)", (category,))
+        cur.execute("INSERT INTO categories VALUES (?,?)", (category,type))
         con.commit()
         con.close()
 
-    def show_db():
+    def show_db(**kwargs):
         con = sqlite3.connect('categories.db')
         cur = con.cursor()
 
         db_results = []
 
-        for row in cur.execute('''SELECT * FROM categories
-            ORDER BY name'''):
-            db_results.append(row)
+        if 'type' in kwargs:
+            for row in cur.execute('''SELECT * FROM categories
+                WHERE type = (?)
+                ORDER BY name''', (kwargs['type'],)):
+                db_results.append(row)
+        else:
+            for row in cur.execute('''SELECT * FROM categories
+                ORDER BY name'''):
+                db_results.append(row) 
 
         con.close()
         
         return db_results
 
     #delete required category and all connected sub-categories
-    def delete_record(category):
+    def delete_record(category, type):
 
         #delete category
         con = sqlite3.connect('categories.db')
         cur = con.cursor()
 
         cur.execute('''DELETE FROM categories 
-        WHERE name = ?''', (category,))
+        WHERE name = ? and type = ?''', (category, type))
         con.commit()
         con.close()
 
@@ -174,7 +254,7 @@ class CategoriesDB:
 
 class SubCategoriesDB:
 
-    def insert_row(category, sub_category, **kwargs):
+    def insert_row(type, category, sub_category, **kwargs):
 
         con = sqlite3.connect('sub_categories.db')
         cur = con.cursor()
@@ -183,32 +263,32 @@ class SubCategoriesDB:
             cur.execute('''DROP TABLE IF EXISTS sub_categories''')
 
             cur.execute('''CREATE TABLE sub_categories
-                        (category, sub_category)''')
+                        (category, sub_category, type)''')
 
-        cur.execute("INSERT INTO sub_categories VALUES (?, ?)", (category, sub_category))
+        cur.execute("INSERT INTO sub_categories VALUES (?, ?, ?)", (category, sub_category, type))
         con.commit()
         con.close()
 
-    def show_db(category):
+    def show_db(type, category):
         con = sqlite3.connect('sub_categories.db')
         cur = con.cursor()
 
         db_results = []
 
         for row in cur.execute('''SELECT sub_category FROM sub_categories
-            WHERE category = (?)
-            ORDER BY sub_category''', (category,)):
+            WHERE type = ? and category = ?
+            ORDER BY sub_category''', (type, category)):
             db_results.append(row)
 
         con.close()
         
         return db_results
 
-    def delete_record(category, sub_category):
+    def delete_record(type, category, sub_category):
         con = sqlite3.connect('sub_categories.db')
         cur = con.cursor()
 
         cur.execute('''DELETE FROM sub_categories 
-        WHERE category = ? and sub_category = ?''', (category, sub_category))
+        WHERE type = ? and category = ? and sub_category = ?''', (type, category, sub_category))
         con.commit()
         con.close()

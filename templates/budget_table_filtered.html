@@ -17,7 +17,14 @@
 {% block content %}
 
 <hr>
-    
+
+<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="collapseExample">
+  Show/Hide Filters
+</button>
+
+<div id="filters" class="collapse">
+<br />
+
 <form method="POST" autocomplete="off">
 
     <label for="formGroupExampleInput" class="form-label">Date from:</label>
@@ -54,10 +61,11 @@
       value="my_clear_date_filters" style="float: right;" >Clear filters</button>
     </form>
 
+</div>
 
     <hr class="text-danger border-2 opacity-50">
 
-    <input class="form-control" id="myInput" type="text" placeholder="Search..">
+    <input class="form-control" id="myInput" type="text" placeholder="Search on current table page..">
     <script>
       $(document).ready(function(){
         $("#myInput").on("keyup", function() {
@@ -79,6 +87,7 @@
         <th>value [PLN]</th>
         <th>category</th>
         <th>sub-category</th>
+        <th>type</th>
         <th>date</th>
         <th></th>
     </tr>
@@ -93,6 +102,7 @@
             <td>{{row.value}}</td>
             <td>{{row.category}}</td>
             <td>{{row.sub_category}}</td>
+            <td>{{row.expense_type}}</td>
             <td>{{row.date}}</td>
             <td>
                 <form method="POST">
