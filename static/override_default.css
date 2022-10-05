@@ -32,8 +32,8 @@ body {
     background: #6c757d !important;
 }
 
-#charts_btn, #return_to_budget_btn, #applied_filters_btn, #clear_filters_btn {
-    background-color: #85919b !important;
+#charts_btn, #return_to_budget_btn, #applied_filters_btn, #clear_filters_btn, #loading_form {
+    background-color: #6c757d !important;
 }
 /* .sub_cat_chart {
     position: absolute;

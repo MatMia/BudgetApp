@@ -66,7 +66,7 @@ class importXLS(object):
             return 'validation_ok'
 
     def insert_to_db(self):
-        BudgetDB.clear_db()
+        # BudgetDB.clear_db()
         for row in self.xls_data.values.tolist():
             expense_name = row[1]
             expense_value = row[2]
