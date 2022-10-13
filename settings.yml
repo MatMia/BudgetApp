@@ -1,2 +1,3 @@
-- name: SonarCloud Scan
-  uses: SonarSource/sonarcloud-github-action@v1.7
+- name: Sonar Scan
+  uses: sijomc/sonarscan-action@1.1
+
