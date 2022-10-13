@@ -1,3 +1,0 @@
-- name: Sonar Scan
-  uses: sijomc/sonarscan-action@1.1
-
