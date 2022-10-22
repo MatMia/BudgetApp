@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "filters_template.html" %}
 
 {% block head %}
     {{ super() }}
@@ -14,61 +14,11 @@
 {% endblock %}
 
 {% block content %}
+{{ super() }}
 
 <hr class="text-danger border-2 opacity-50">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
-
-
-<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="collapseExample">
-  Show/Hide Filters
-</button>
-
-<div id="filters" class="collapse">
-<br />
-
-
-
-<form method="POST" autocomplete="off">
-
-  <label for="formGroupExampleInput" class="form-label">Date from:</label>
-   <div class="form-group">
-     <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" value = {{date_from}} type="text" required/>
-   </div>
-
-      <label for="formGroupExampleInput" class="form-label">Date to:</label>
-       <div class="form-group">
-         <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" value = {{date_to}} type="text" required/>
-       </div>
-
-<script>
-  $(document).ready(function(){
-    var date_from=$('input[name="date_from"]');
-    var date_to=$('input[name="date_to"]');
-    var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
-    var options={
-      format: 'yyyy-mm-dd',
-      container: container,
-      todayHighlight: true,
-      autoclose: true,
-    };
-    date_from.datepicker(options);
-    date_to.datepicker(options);
-  })
-</script>
-
-  <br />
-    <button class="btn btn-secondary" name="apply_date_filters"
-    value="my_apply_date_filters">Apply filters</button>
-
-    <button class="btn btn-secondary" name="clear_date_filters"
-    value="my_clear_date_filters" style="float: right;" >Clear filters</button>
-  </form>
-
-
-</div>
-
-
 
 <canvas id="chart" width="600" height="400"></canvas>
 <div class="sub_cat_chart">
@@ -105,7 +55,7 @@
           $.ajax({
             url: "/filtered_sub_category_data_table",
             type: "POST",
-            data:  {category: activeCategory, sub_category: sub_cat_chart.data.labels[item[0]._index], date_from: date_from, date_to: date_to},
+            data:  {category: activeCategory, sub_category: sub_cat_chart.data.labels[item[0]._index], date_from: date_from, date_to: date_to, category_filter: category_filter, sub_category_filter : sub_category_filter, type_filter : type_filter},
             success: function(data) {
               var HTML = "<table class='table'> <thead><tr><td class='uuid_column'>input_uuid</td><th>name</th><th>value [PLN]</th><th>category</th><th>sub-category</th><th>type</th><th>date</th><th></th></tr></thead><tbody>";
                 $.each(data, function(key, value) {
@@ -138,6 +88,9 @@
     var colors = {{colors|safe}};
     var date_from = {{date_from|tojson}}
     var date_to = {{date_to|tojson}}
+    var category_filter = {{category_filter|tojson}}
+    var sub_category_filter = {{sub_category_filter|tojson}}
+    var type_filter = {{type_filter|tojson}}
 
     var chart = new Chart(document.getElementById("chart"), {
     type: 'pie',
@@ -165,7 +118,7 @@
         $.ajax({
                 url:"/filtered_sub_category_chart",
                 type:"POST",
-                data: {category: labels[item[0]._index], date_from: date_from, date_to: date_to},
+                data: {category: labels[item[0]._index], date_from: date_from, date_to: date_to, category_filter: category_filter, sub_category_filter : sub_category_filter, type_filter : type_filter},
                 success: function(data) {
                     canvas = document.getElementById("sub_cat_chart");
                     canvas.removeAttribute("hidden");

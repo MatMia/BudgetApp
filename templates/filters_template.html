@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+
+
+<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="collapseExample">
+  Show/Hide Filters
+</button>
+
+<div id="filters" class="collapse">
+<br />
+
+
+<form method="POST" autocomplete="off">
+
+  <label for="formGroupExampleInput" class="form-label">Date from:</label>
+   <div class="form-group" style="width:470px;">
+     <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" type="text" required/>
+   </div>
+
+      <label for="formGroupExampleInput" class="form-label">Date to:</label>
+       <div class="form-group" style="width:470px;">
+         <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" type="text" required/>
+       </div>
+
+       <div class style="float: left;">
+       <label for="formGroupExampleInput" class="form-label">Category:</label>
+       <div class="form-group" id="category_filter_class">
+         <select class="selectpicker" multiple data-live-search="true" name="category_filter_value" id="category_filter_value">
+            {% for category in categories.items %}
+            <option>{{category.name}}</option>
+            {% endfor %}
+         </select>
+        </div>
+       </div>
+
+
+       <div class="sub_cat_filter" style="float: left;">
+        <label for="formGroupExampleInput" class="form-label">Sub-category:</label>
+        <div class="form-group" id="sub_category_filter_class">
+          <select class="selectpicker" multiple data-live-search="true" name="sub_category_filter_value" id="sub_category_filter_value">
+              {% for sub_category in sub_categories.items %}
+              <option>{{sub_category.name}}</option>
+              {% endfor %}
+          </select>
+          </div>
+        </div>
+
+
+        <div class="type_filter" style="float: left;">
+          <label for="formGroupExampleInput" class="form-label">Type:</label>
+          <div class="form-group" id="type_filter_class">
+            <select class="selectpicker" multiple data-live-search="true" name="type_filter_value" id=" ">
+                {% for type in types.items %}
+                <option>{{type.name}}</option>
+                {% endfor %}
+            </select>
+            </div>
+          </div>
+
+
+<script>
+  $(document).ready(function(){
+    var date_from=$('input[name="date_from"]');
+    var date_to=$('input[name="date_to"]');
+    var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+    var options={
+      format: 'yyyy-mm-dd',
+      container: container,
+      todayHighlight: true,
+      autoclose: true,
+      orientation: 'top right'
+    };
+    date_from.datepicker(options);
+    date_to.datepicker(options);
+  })
+</script>
+
+<script> 
+function populate_filter_values() {
+  var date_from = {{date_from|tojson}};
+  var date_to = {{date_to|tojson}};
+  var category_filter = {{category_filter|tojson}};
+  var sub_category_filter = {{sub_category_filter|tojson}};
+  var type_filter = {{type_filter|tojson}};
+  document.getElementById("date_from").value = date_from;
+  document.getElementById("date_to").value = date_to;
+  var category_filter_button = document.getElementById("category_filter_class");
+  var sub_category_filter_button = document.getElementById("sub_category_filter_class");
+  var type_filter_button = document.getElementById("type_filter_class");
+
+  category_filter_button.getElementsByClassName("filter-option-inner-inner")[0].innerText = category_filter;
+  sub_category_filter_button.getElementsByClassName("filter-option-inner-inner")[0].innerText = sub_category_filter;
+  type_filter_button.getElementsByClassName("filter-option-inner-inner")[0].innerText = type_filter;
+  category_filter_button.getElementsByClassName("btn dropdown-toggle bs-placeholder btn-light")[0].title = category_filter ;
+  sub_category_filter_button.getElementsByClassName("btn dropdown-toggle bs-placeholder btn-light")[0].title = sub_category_filter;
+  type_filter_button.getElementsByClassName("btn dropdown-toggle bs-placeholder btn-light")[0].title = type_filter;
+};
+setTimeout(populate_filter_values,10);
+</script>
+
+<br><br><br><br>
+
+    <button class="btn btn-secondary" name="apply_filters"
+    value="my_apply_filters" style="float: none;" >Apply filters</button>
+
+    <button class="btn btn-secondary" name="clear_filters" id="clear_filters"
+    value="my_clear_filters" style="float: right; display: none;">Clear filters</button>
+  </form>
+
+  <script>
+    function show_clear_button() {
+      if (date_from.value != "" || date_to.value != "" || category_filter_value.value != "" || sub_category_filter_value.value != "" || type_filter_value.value != "") {
+        document.getElementById("clear_filters").style.display = "";
+      } else {
+        document.getElementById("clear_filters").style.display = "none";
+      };
+    };
+    setTimeout(show_clear_button,15);
+  </script>
+
+
+</div>
+
+{% endblock %}

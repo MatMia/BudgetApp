@@ -1,7 +1,14 @@
+import json
+from sre_compile import isstring
 from flask import Flask, flash, request, render_template, session, redirect, url_for, jsonify
+import json
+import numpy as np
 from markupsafe import escape
-from .display_data import *
-from .validators import *
+from BudgetApp.db import *
+from BudgetApp.display_data import *
+from BudgetApp.validators import *
+import BudgetApp.monthToMonth as monthToMonth
+
 
 from flask_paginate import Pagination, get_page_parameter
 import random
@@ -18,7 +25,7 @@ def expenses_main():
     types = ShowBudgetTable.show_types_table()
     return render_template("single_input_form.html", validity_class_name="form-control is-invalid", validity_class_value="form-control is-invalid", \
             invalid_feedback_name="", invalid_feedback_value="", \
-                input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", \
+                input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link", \
                     types=types, categories=[], sub_categories=[])
 
 @app.route('/', methods=['GET', 'POST'])
@@ -38,6 +45,9 @@ def expense_input():
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
 #bulk upload
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
@@ -53,7 +63,7 @@ def upload_file():
 
         columns_validation = file.validate_columns()
         if columns_validation != 'validation_ok':
-            flash("Columns " + str(columns_validation) + " are missing in the file.")
+            flash("Columns " + str(columns_validation) + " are missing in the file. Please correct the file.")
         else:
             session['_flashes'].clear()
             file.insert_to_db()
@@ -72,10 +82,13 @@ def upload_file():
 
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
+
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
     
     else:
         return render_template("bulk_input_form.html", \
-            input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link")
+            input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link", )
 
 #read categories from the type value - AJAX
 @app.route('/input_category', methods=['GET', 'POST'])
@@ -96,8 +109,7 @@ def input_sub_category():
         posted_date.append(item)
     active_category = posted_date[0]
     active_type = posted_date[1]
-    # active_type = [name for name, value in request.form.to_dict().items()][1]
-    sub_categories = ShowBudgetTable.show_sub_categories_table(active_type, active_category)
+    sub_categories = ShowBudgetTable.show_sub_categories_table(type=active_type, category=active_category)
     ajax_dict = {}
     for i, value in enumerate(sub_categories.items):
         ajax_dict.update({value.name : i})
@@ -108,6 +120,9 @@ def input_sub_category():
 #budget status endpoints
 @app.route("/db_state")
 def show_db_state():
+    types = ShowBudgetTable.show_types_table()
+    categories = ShowBudgetTable.show_categories_table()
+    sub_categories = ShowBudgetTable.show_sub_categories_table()
 
     total_db_results = ShowBudgetTable.show_budget_table()
     total = total_db_results[2]
@@ -122,7 +137,9 @@ def show_db_state():
     table = paged_db_results[0]  
 
     return render_template("budget_table.html", table=table, value_sum=value_sum, pagination=pagination, \
-        input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link")
+        input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link", analytics_button = "nav-link", \
+            date_from = "", date_to = "", category_filter = "Nothing Selected", sub_category_filter = "Nothing Selected", type_filter = "Nothing Selected", \
+                types=types, categories=categories, sub_categories=sub_categories)
 
 
 @app.route("/db_state", methods=['GET', 'POST'])
@@ -143,23 +160,42 @@ def return_to_input():
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
-    elif request.form.get("apply_date_filters"):
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
+    elif request.form.get("apply_filters"):
         date_from = request.form.get("date_from")
         date_to = request.form.get("date_to")
-        return redirect(url_for('show_db_state_dates_filters', filters=[date_from, date_to]))
+        category_filter = request.form.getlist("category_filter_value")
+        sub_category_filter = request.form.getlist("sub_category_filter_value")
+        type_filter = request.form.getlist("type_filter_value")
+        return redirect(url_for('show_db_state_filters', filters=({"date_from": date_from, "date_to" : date_to, "category_filter" : category_filter, \
+            "sub_category_filter" : sub_category_filter, "type_filter" : type_filter})))
 
     elif request.form.get("btn") == "charts":
         return redirect(url_for('pie'))
 
 
 @app.route("/db_state/<filters>", methods=['GET', 'POST'])
-def show_db_state_dates_filters(filters):
-    date_from = filters[2:12]
-    date_to =  filters[16:26]
+def show_db_state_filters(filters):
+    types = ShowBudgetTable.show_types_table()
+    categories = ShowBudgetTable.show_categories_table()
+    sub_categories = ShowBudgetTable.show_sub_categories_table()
+
+    filters = json.loads(filters.replace("'",'"'))
+    date_from = filters["date_from"]
+    date_to =  filters["date_to"]
+
+    optional_filters = Filters.define_optional_filters(filters)
+    category_filter = optional_filters[0]
+    sub_category_filter = optional_filters[1]
+    type_filter = optional_filters[2]
+
+    active_filters = Filters.get_active_filters(filters)
 
     #validate filters conditions
-    if Filters.budget_filters(date_from, date_to) is True:
-        total_db_results = ShowBudgetTable.show_budget_table(date_from=date_from, date_to=date_to)
+    if Filters.budget_filters(active_filters) is True:
+        total_db_results = ShowBudgetTable.show_budget_table(active_filters=active_filters)
         total = total_db_results[2]
         value_sum = round(total_db_results[1],2)
 
@@ -168,7 +204,7 @@ def show_db_state_dates_filters(filters):
         offset = (page - 1) * per_page
         pagination = Pagination(page=page, per_page=per_page, total=total)
 
-        paged_db_results = ShowBudgetTable.show_budget_table(limit=per_page, offset=offset, date_from=date_from, date_to=date_to)
+        paged_db_results = ShowBudgetTable.show_budget_table(limit=per_page, offset=offset, active_filters=active_filters)
         table = paged_db_results[0] 
 
         if request.form.get("delete_record"):
@@ -187,32 +223,42 @@ def show_db_state_dates_filters(filters):
         elif request.form.get("menu_categories") == "my_categories":
             return redirect(url_for('show_db_types'))
 
-        elif request.form.get("apply_date_filters"):
+        elif request.form.get("analytics_menu") == "my_analytics":
+            return redirect(url_for('show_main_analytics'))
+
+        elif request.form.get("apply_filters"):
             date_from = request.form.get("date_from")
             date_to = request.form.get("date_to")
-            return redirect(url_for('show_db_state_dates_filters', filters=[date_from, date_to]))
+            category_filter = request.form.getlist("category_filter_value")
+            sub_category_filter = request.form.getlist("sub_category_filter_value")
+            type_filter = request.form.getlist("type_filter_value")
+            return redirect(url_for('show_db_state_filters', filters=({"date_from": date_from, "date_to" : date_to, "category_filter" : category_filter, \
+            "sub_category_filter" : sub_category_filter, "type_filter" : type_filter})))
 
-        elif request.form.get("clear_date_filters") == 'my_clear_date_filters':
+        elif request.form.get("clear_filters") == 'my_clear_filters':
             return redirect(url_for('show_db_state'))
 
         elif request.form.get("btn") == "charts":
-            return redirect(url_for('filtered_pie', filters=[date_from, date_to]))
+            return redirect(url_for('filtered_pie', filters=active_filters))
 
         else:
-            succesfull_filters(date_from, date_to)
-            return render_template("budget_table_filtered.html", table=table, value_sum=value_sum, pagination=pagination, \
-                input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link",
-                date_from=date_from, date_to=date_to)
+            succesfull_filters(active_filters)
+            return render_template("budget_table.html", table=table, value_sum=value_sum, pagination=pagination, \
+                input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link", analytics_button = "nav-link", \
+                date_from=date_from, date_to=date_to, category_filter=category_filter, sub_category_filter=sub_category_filter, type_filter=type_filter, \
+                types=types, categories=categories, sub_categories=sub_categories)
     else:
         return redirect(url_for('show_db_state'))
 
 
 
 
-
-#display no filtered pie charts
+#display unfiltered pie charts
 @app.route('/db_state/pie')
 def pie():
+    types = ShowBudgetTable.show_types_table()
+    categories = ShowBudgetTable.show_categories_table()
+    sub_categories = ShowBudgetTable.show_sub_categories_table()
 
     pie_chart_data = ShowChartsData.show_pie_chart()
     labels = []
@@ -226,7 +272,9 @@ def pie():
                 for i in range(number_of_colors)]
 
     return render_template('charts.html', title='test_charts', labels=labels, values=values, colors=colors, \
-        input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link")
+        input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link", analytics_button = "nav-link", \
+            date_from = "", date_to = "", category_filter = "Nothing Selected", sub_category_filter = "Nothing Selected", type_filter = "Nothing Selected", \
+                types=types, categories=categories, sub_categories=sub_categories)
 
 
 @app.route('/db_state/pie', methods=['GET', 'POST'])
@@ -243,16 +291,106 @@ def pie_charts():
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
     elif request.form.get("btn") == "return_to_budget":
         return redirect(url_for('show_db_state'))
 
-    elif request.form.get("apply_date_filters"):
-        date_from = request.form.get("date_from")
-        date_to = request.form.get("date_to")
-        if Filters.budget_filters(date_from, date_to) is True:
-            return redirect(url_for('filtered_pie', filters=[date_from, date_to]))          
+    elif request.form.get("apply_filters"):
+        updated_date_from = request.form.get("date_from")
+        updated_date_to = request.form.get("date_to")
+        updated_category_filter = request.form.getlist("category_filter_value")
+        updated_sub_category_filter = request.form.getlist("sub_category_filter_value")
+        updated_type_filter = request.form.getlist("type_filter_value")
+        updated_filters = {"date_from": updated_date_from, "date_to" : updated_date_to, "category_filter" : updated_category_filter, \
+            "sub_category_filter" : updated_sub_category_filter, "type_filter" : updated_type_filter}
+        if Filters.budget_filters(updated_filters) is True:
+            return redirect(url_for('filtered_pie', filters=updated_filters))         
         else:
             return redirect(url_for('pie'))
+
+
+
+#display filtered pie charts
+@app.route('/pie/<filters>', methods=['GET', 'POST'])
+def filtered_pie(filters):
+    types = ShowBudgetTable.show_types_table()
+    categories = ShowBudgetTable.show_categories_table()
+    sub_categories = ShowBudgetTable.show_sub_categories_table()
+
+    filters = json.loads(filters.replace("'",'"'))
+    date_from = filters["date_from"]
+    date_to =  filters["date_to"]
+
+    optional_filters = Filters.define_optional_filters(filters)
+    category_filter = optional_filters[0]
+    sub_category_filter = optional_filters[1]
+    type_filter = optional_filters[2]
+
+    active_filters = Filters.get_active_filters(filters)
+
+    succesfull_filters(active_filters)
+    
+    if request.form.get("menu_input_form") == "my_input_form":
+        session['_flashes'].clear()
+        return redirect(url_for('expenses_main'))
+
+    elif request.form.get("menu_input_form") == "bulk_input_form":
+        session['_flashes'].clear()
+        return redirect(url_for('upload_file'))
+
+    elif request.form.get("menu_current_budget") == "my_current_budget":
+        session['_flashes'].clear()
+        return redirect(url_for('show_db_state'))
+
+    elif request.form.get("menu_categories") == "my_categories":
+        session['_flashes'].clear()
+        return redirect(url_for('show_db_types'))
+
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
+    elif request.form.get("apply_filters"):
+        updated_date_from = request.form.get("date_from")
+        updated_date_to = request.form.get("date_to")
+        updated_category_filter = request.form.getlist("category_filter_value")
+        updated_sub_category_filter = request.form.getlist("sub_category_filter_value")
+        updated_type_filter = request.form.getlist("type_filter_value")
+        updated_filters = {"date_from": updated_date_from, "date_to" : updated_date_to, "category_filter" : updated_category_filter, \
+            "sub_category_filter" : updated_sub_category_filter, "type_filter" : updated_type_filter}
+
+        session['_flashes'].clear()
+        if Filters.budget_filters(updated_filters) is True:
+            return redirect(url_for('filtered_pie', filters=updated_filters))
+        else:
+            return redirect(url_for('filtered_pie', filters=active_filters))
+
+    elif request.form.get("clear_filters") == 'my_clear_filters':
+        session['_flashes'].clear()
+        return redirect(url_for('pie'))
+
+    elif request.form.get("btn") == "return_to_budget":
+            session['_flashes'].clear()
+            return redirect(url_for('show_db_state_filters', filters=active_filters))
+
+    else:
+        pie_chart_data = ShowChartsData.show_pie_chart(active_filters=active_filters)
+        labels = []
+        values = []
+        for row in pie_chart_data:
+            labels.append(row[0])
+            values.append(row[1])
+
+        number_of_colors = len(labels)
+        colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+                    for i in range(number_of_colors)]
+        return render_template('charts_filtered.html', title='test_charts', labels=labels, values=values, colors=colors, \
+            input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link", analytics_button = "nav-link",
+                date_from=date_from, date_to=date_to, category_filter=category_filter, sub_category_filter=sub_category_filter, type_filter=type_filter, \
+                types=types, categories=categories, sub_categories=sub_categories)
+
+
 
 #read sub-category pie chart data - AJAX
 @app.route('/sub_category_chart', methods=['GET', 'POST'])
@@ -292,61 +430,6 @@ def get_sub_cat_data_table():
 
 
 
-
-#display filtered pie charts
-@app.route('/pie/<filters>', methods=['GET', 'POST'])
-def filtered_pie(filters):
-    date_from = filters[2:12]
-    date_to =  filters[16:26]
-    succesfull_filters(date_from, date_to)
-    
-    if request.form.get("menu_input_form") == "my_input_form":
-        session['_flashes'].clear()
-        return redirect(url_for('expenses_main'))
-
-    elif request.form.get("menu_input_form") == "bulk_input_form":
-        session['_flashes'].clear()
-        return redirect(url_for('upload_file'))
-
-    elif request.form.get("menu_current_budget") == "my_current_budget":
-        session['_flashes'].clear()
-        return redirect(url_for('show_db_state'))
-
-    elif request.form.get("menu_categories") == "my_categories":
-        session['_flashes'].clear()
-        return redirect(url_for('show_db_types'))
-
-    elif request.form.get("apply_date_filters"):
-        updated_date_from = request.form.get("date_from")
-        updated_date_to = request.form.get("date_to")
-        session['_flashes'].clear()
-        if Filters.budget_filters(updated_date_from, updated_date_to) is True:
-            return redirect(url_for('filtered_pie', filters=[updated_date_from, updated_date_to]))
-        else:
-            return redirect(url_for('filtered_pie', filters=[date_from, date_to]))
-
-    elif request.form.get("clear_date_filters") == 'my_clear_date_filters':
-        session['_flashes'].clear()
-        return redirect(url_for('pie'))
-
-    elif request.form.get("btn") == "return_to_budget":
-            session['_flashes'].clear()
-            return redirect(url_for('show_db_state_dates_filters', filters=[date_from, date_to]))
-    else:
-        pie_chart_data = ShowChartsData.show_pie_chart(date_from=date_from, date_to=date_to)
-        labels = []
-        values = []
-        for row in pie_chart_data:
-            labels.append(row[0])
-            values.append(row[1])
-
-        number_of_colors = len(labels)
-        colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
-                    for i in range(number_of_colors)]
-        return render_template('charts_filtered.html', title='test_charts', labels=labels, values=values, colors=colors, \
-            input_form_buttom="nav-link", current_budget_button="nav-link active", categories_button = "nav-link",
-                date_from=date_from, date_to=date_to)
-
 #read sub-category filtered pie chart data - AJAX
 @app.route('/filtered_sub_category_chart', methods=['GET', 'POST'])
 def filtered_sub_category_chart():
@@ -356,7 +439,13 @@ def filtered_sub_category_chart():
     category = posted_data[0]
     date_from = posted_data[1]
     date_to = posted_data[2]
-    sub_cat_chart_data = ShowChartsData.sub_cat_chart_data(category, date_from=date_from, date_to=date_to)
+    category_filter =  posted_data[3].split(',')
+    sub_category_filter =  posted_data[4].split(',')
+    type_filter =  posted_data[5].split(',')
+    active_filters = Filters.get_active_filters({"date_from": date_from, "date_to" : date_to, "category_filter" : category_filter, \
+        "sub_category_filter" : sub_category_filter, "type_filter" : type_filter})
+    print(active_filters)
+    sub_cat_chart_data = ShowChartsData.sub_cat_chart_data(category, active_filters=active_filters)
     dict_without_colors = {}
 
     #pack data into dict
@@ -376,13 +465,18 @@ def get_filtered_sub_cat_data_table():
     sub_category = posted_data[1]
     date_from = posted_data[2]
     date_to = posted_data[3]
+    category_filter =  posted_data[4].split(',')
+    sub_category_filter =  posted_data[5].split(',')
+    type_filter =  posted_data[6].split(',')
+    active_filters = Filters.get_active_filters({"date_from": date_from, "date_to" : date_to, "category_filter" : category_filter, \
+        "sub_category_filter" : sub_category_filter, "type_filter" : type_filter})
 
     page = request.args.get(get_page_parameter(), type=int, default=1)
     per_page = 10
     offset = (page - 1) * per_page
 
-    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category, date_from=date_from, date_to=date_to)[1]
-    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, date_from=date_from, date_to=date_to)[0]
+    total_count = ShowBudgetTable.show_sub_category_data_table(category, sub_category, active_filters=active_filters)[1]
+    sub_category_data = ShowBudgetTable.show_sub_category_data_table(category, sub_category, active_filters=active_filters)[0]
     pagination = Pagination(page=page, per_page=per_page, total=total_count)
 
     #pack data into dict
@@ -398,7 +492,7 @@ def get_filtered_sub_cat_data_table():
 def show_db_types():
     table = ShowBudgetTable.show_types_table()
     return render_template("types_table.html", table=table, \
-        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active")
+        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/types', methods=['GET', 'POST'])
 def types_actions():
@@ -425,6 +519,9 @@ def types_actions():
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
 
 
 
@@ -433,7 +530,7 @@ def types_actions():
 def show_db_categories(type):
     table = ShowBudgetTable.show_categories_table(type=type)
     return render_template("categories_table.html", table=table, type=type, \
-        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active")
+        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/categories/<type>', methods=['GET', 'POST'])
 def categories_actions(type):
@@ -460,6 +557,9 @@ def categories_actions(type):
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
     elif request.form.get("btn") == "return_to_types":
         return redirect(url_for('show_db_types'))
 
@@ -469,9 +569,9 @@ def categories_actions(type):
 #sub_categories endpoints
 @app.route("/sub_categories/<category>, <type>")
 def show_db_sub_categories(category, type):
-    table = ShowBudgetTable.show_sub_categories_table(type, category)
+    table = ShowBudgetTable.show_sub_categories_table(type=type, category=category)
     return render_template("sub_categories_table.html", table=table, category=category, type=type, \
-        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active")
+        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/sub_categories/<category>, <type>', methods=['GET', 'POST'])
 def sub_categories_actions(category, type):
@@ -497,7 +597,105 @@ def sub_categories_actions(category, type):
     elif request.form.get("menu_categories") == "my_categories":
         return redirect(url_for('show_db_types'))
 
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
 
+
+#analytics endpoints
+
+@app.route("/M2Manalytics")
+def show_main_analytics():
+    return render_template("monthToMonth.html", \
+        input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link active", \
+            months_filter_value = "", my_content_types=[""], my_content_categories=[""])
+
+@app.route('/M2Manalytics', methods=['GET', 'POST'])
+def main_analytics():
+    if request.form.get("btn") == "submit_form":
+        return InputForm.main_input_form()
+
+    elif request.form.get("menu_input_form") == "my_input_form":
+        return redirect(url_for('expenses_main'))
+
+    elif request.form.get("menu_input_form") == "bulk_input_form":
+        return redirect(url_for('upload_file'))
+
+    elif request.form.get("menu_current_budget") == "my_current_budget":
+        return redirect(url_for('show_db_state'))
+
+    elif request.form.get("menu_categories") == "my_categories":
+        return redirect(url_for('show_db_types'))
+
+    elif request.form.get("analytics_menu") == "my_analytics":
+        return redirect(url_for('show_main_analytics'))
+
+    elif request.form.get("clear_month_to_month_filters") == 'my_clear_filters':
+        return redirect(url_for('show_main_analytics'))
+
+    elif request.form.get("apply_month_to_month_filters") == "my_apply_filters":
+        months_filter_value = request.form.get("months_filter")
+        M2M_data = monthToMonth.MonthsComparison(months_filter_value)
+        months_data_grouped_by_date_and_type = M2M_data.get_months_data_grouped_by_date_and_type()
+        return render_template("monthToMonth.html", \
+            input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link active", \
+                months_filter_value = months_filter_value, my_content_types = months_data_grouped_by_date_and_type)
+
+
+@app.route('/get_categories_section_in_analytics', methods=['GET', 'POST'])
+def get_categories_section_in_analytics():
+    accepted_data = [value for name, value in request.form.to_dict().items()]
+    months_filter_value = accepted_data[0]
+    type_filter_value = accepted_data[1]
+
+    M2M_categories_data = monthToMonth.MonthsComparison(months_filter_value, type=type_filter_value)
+    months_data_grouped_by_date_type_and_category = M2M_categories_data.get_months_data_grouped_by_date_type_and_category()
+    working_months_data_grouped_by_date_type_and_category = []
+    for value in months_data_grouped_by_date_type_and_category:
+        if isinstance(value[0], list):
+            for sub_value in value:
+                working_months_data_grouped_by_date_type_and_category.append(sub_value)
+                
+    months_data_grouped_by_date_type_and_category_json = json.dumps(working_months_data_grouped_by_date_type_and_category, cls=NpEncoder)
+
+
+    return(months_data_grouped_by_date_type_and_category_json)
+
+
+@app.route('/get_sub_categories_section_in_analytics', methods=['GET', 'POST'])
+def get_sub_categories_section_in_analytics():
+
+    accepted_data = [value for name, value in request.form.to_dict().items()]
+    months_filter_value = accepted_data[0]
+    type_filter_value = accepted_data[1]
+    category_filter_value = accepted_data[2]
+
+    M2M_categories_data = monthToMonth.MonthsComparison(months_filter_value, type=type_filter_value, category=category_filter_value)
+    months_data_grouped_by_date_type_category_and_sub_category = M2M_categories_data.get_months_data_grouped_by_date_type_category_and_sub_category()
+    working_months_data_grouped_by_date_type_category_and_sub_category = []
+    for value in months_data_grouped_by_date_type_category_and_sub_category:
+        if isinstance(value[0], list):
+            for sub_value in value:
+                working_months_data_grouped_by_date_type_category_and_sub_category.append(sub_value)
+                
+    months_data_grouped_by_date_type_category_and_sub_category_json = json.dumps(working_months_data_grouped_by_date_type_category_and_sub_category, cls=NpEncoder)
+
+    return(months_data_grouped_by_date_type_category_and_sub_category_json)
+
+
+
+
+
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 
 #flash messages handler
@@ -533,8 +731,12 @@ def succesfull_message_sub_categories(action, name, category, type):
         flash("Record deleted succesfully")
         return redirect(url_for('show_db_sub_categories', category=category, type=type))
 
-def succesfull_filters(date_from, date_to):
-    flash("Filters (Date From: " + str(date_from) + ", Date To: " + str(date_to) + ") have been applied.")
+def succesfull_filters(active_filters):
+    filters_message = 'Filters, '
+    for key, value in active_filters.items():
+        filters_message += key + ": " + str(value) + ", "
+    filters_message = filters_message[:-1] + " have been applied"
+    flash(filters_message)
 
 
 
@@ -598,7 +800,7 @@ class InputForm():
         else:
             return render_template("single_input_from.html", validity_class_name="form-control is-invalid", validity_class_value="form-control is-invalid", \
                 invalid_feedback_name=invalid_feedback_name, invalid_feedback_value=invalid_feedback_value, \
-                    input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", \
+                    input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link", \
                         categories=[], sub_categories=[])
 
     #type input form
@@ -680,16 +882,19 @@ class InputForm():
 class Filters():
 
     #budget filters
-    def budget_filters(date_from, date_to):
-        budgetFiltersValidator = BudgetFiltersValidation(date_from, date_to)
-
-        # name field validation
-        if budgetFiltersValidator.compare_dates() is False:
-            invalid_feedback_category = ("'Date From' needs to be smaller or equal 'Date To'")
-            budget_filters_boolean = False
-        else:
-            invalid_feedback_category = ""
-            budget_filters_boolean = True
+    def budget_filters(active_filters):
+        budgetFiltersValidator = BudgetFiltersValidation(active_filters)
+        # dates filters field validation
+        if active_filters['date_from']:
+            if budgetFiltersValidator.compare_dates() is False:
+                invalid_feedback_category = ("'Date From' needs to be smaller or equal 'Date To'")
+                budget_filters_boolean = False
+            else:   
+                invalid_feedback_category = ""
+                budget_filters_boolean = True
+        else:   
+                invalid_feedback_category = ""
+                budget_filters_boolean = True
 
         # summary validation condition    
         if budget_filters_boolean is True:
@@ -697,6 +902,46 @@ class Filters():
         else:
             flash("Filters haven't been applied. " + invalid_feedback_category + ". Please correct filters.")
 
+
+    def get_active_filters(filters):
+        active_filters = {}
+        for key, value in filters.items():
+            if isstring(value):
+                if value != '':
+                    active_filters.update({key : value})
+            elif isinstance(value, list):
+                if len(value) > 0 and value[0] != 'Nothing selected':
+                    active_filters.update({key : value})
+        return(active_filters)
+
+
+    def define_optional_filters(filters):
+
+        if "category_filter" in filters.keys():
+            if len(filters["category_filter"]) > 0:
+                category_filter = str(filters["category_filter"])[1:-1].replace(" ", "").replace("'", "")
+            else:
+                category_filter = 'Nothing selected'
+        else: 
+            category_filter = 'Nothing selected'
+
+        if "sub_category_filter" in filters.keys():
+            if len(filters["sub_category_filter"]) > 0:
+                sub_category_filter = str(filters["sub_category_filter"])[1:-1].replace(" ", "").replace("'", "")
+            else:
+                sub_category_filter = 'Nothing selected'
+        else: 
+            sub_category_filter = 'Nothing selected'
+
+        if "type_filter" in filters.keys():
+            if len(filters["type_filter"]) > 0:
+                type_filter = str(filters["type_filter"])[1:-1].replace(" ", "").replace("'", "")
+            else:
+                type_filter = 'Nothing selected'
+        else: 
+            type_filter = 'Nothing selected'
+        
+        return([category_filter, sub_category_filter, type_filter])
 
 
 #main application handler
