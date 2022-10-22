@@ -1,0 +1,37 @@
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Home Budget Application</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="../static/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="text-center">
+
+  <div class="container">
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+        {{ message }}
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+  <form method="POST" autocomplete="off", class="form-signin">
+    <img class="mb-4" src="../static/budget_logo.jpg" alt="" width="72" height="72">
+    <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+    <label class="sr-only">UserId</label>
+    <input type="user" id="userId" name="userId", class="form-control" placeholder="UserID" required="" autofocus="">
+    <label for="inputPassword" class="sr-only">Password</label>
+    <input type="password" id="inputPassword" name="password" class="form-control" pattern="^([a-zA-Z0-9\?\!]){6,20}$" placeholder="Password" required="">
+    <br />
+    <button class="btn btn-secondary" name="login_btn" value="login_btn">Sign in</button>
+  </form>
+</div>
+
+</body></html>
