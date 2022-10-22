@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "filters_template.html" %}
 
 {% block head %}
     {{ super() }}
@@ -15,50 +15,7 @@
 {% endblock %}
 
 {% block content %}
-
-<hr>
-  
-<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="collapseExample">
-  Show/Hide Filters
-</button>
-
-<div id="filters" class="collapse">
-<br />
-<form method="POST" autocomplete="off">
-    <label for="formGroupExampleInput" class="form-label">Date from:</label>
-     <div class="form-group">
-       <input class="form-control" id="date_from" name="date_from" placeholder="YYYY-MM-DD" type="text" required/>
-     </div>
-
-        <label for="formGroupExampleInput" class="form-label">Date to:</label>
-         <div class="form-group">
-           <input class="form-control" id="date_to" name="date_to" placeholder="YYYY-MM-DD" type="text" required/>
-         </div>
-
-
-<script>
-    $(document).ready(function(){
-      var date_from=$('input[name="date_from"]');
-      var date_to=$('input[name="date_to"]');
-      var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
-      var options={
-        format: 'yyyy-mm-dd',
-        container: container,
-        todayHighlight: true,
-        autoclose: true,
-      };
-      date_from.datepicker(options);
-      date_to.datepicker(options);
-    })
-</script>
-
-    <br />
-      <button class="btn btn-secondary" name="apply_date_filters"
-      value="my_apply_date_filters">Apply filters</button>
-
-      </form>
-
-  </div>
+{{ super () }}
 
 
     <hr class="text-danger border-2 opacity-50">
@@ -74,8 +31,6 @@
         });
       });
       </script> 
-
-
 
 
    <table class="table">

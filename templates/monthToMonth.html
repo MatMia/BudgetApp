@@ -1,0 +1,245 @@
+{% extends "main_analytics.html" %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+
+
+<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filters" aria-expanded="false" aria-controls="collapseExample">
+    Show/Hide Filters
+  </button>
+  
+  <div id="filters" class="collapse show">
+  <br>
+  
+  
+  <form method="POST" autocomplete="off">
+  
+    <label for="formGroupExampleInput" class="form-label">Select months for analysis:</label>
+     <div class="form-group" style="width:470px;">
+       <input class="form-control" id="months_filter" name="months_filter" type="text" required/>
+     </div>
+
+     <button class="btn btn-secondary" name="apply_month_to_month_filters" id="apply_month_to_month_filters"
+     value="my_apply_filters">Apply filters</button>
+ 
+     <button class="btn btn-secondary" name="clear_month_to_month_filters" id="clear_month_to_month_filters"
+     value="my_clear_filters" style="float: right; display: none;">Clear filters</button>
+
+     <script>
+        $(document).ready(function(){
+          var months_filter=$('input[name="months_filter"]');
+          var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+          var options={
+            format: 'MM-yy',
+            container: container,
+            orientation: 'top right',
+            multidate: true,
+            startView: "months",
+            minViewMode: "months",
+          };
+          months_filter.datepicker(options);
+        })
+      </script>
+
+
+    <script>
+        months_filters_value = document.getElementById("months_filter");
+        months_filters_value.value = {{months_filter_value|tojson}};
+        function show_clear_button() {
+        if (months_filter.value != "") {
+            document.getElementById("clear_month_to_month_filters").style.display = "";
+            document.getElementById("filters").className = "collapse";
+            document.getElementById("m2m_table").style.display = "";
+        } else {
+            document.getElementById("clear_month_to_month_filters").style.display = "none";
+        };
+        };
+        setTimeout(show_clear_button,5);
+    </script>
+
+
+  </div>
+
+  <br><br>
+
+  <table class="table" id="m2m_table" style="display: none;">
+
+    <thead id="myTableHeaders" class="thead-light">
+
+    <tr>
+      <th style="width:15%"></td>
+      <th></th>
+      {% for row in my_content_types[0] %}
+      <th class="header_months">{{row}}</th>
+      {% endfor %}
+
+    </tr>
+
+    </thead>
+  </form>
+
+
+    <tbody id="myTablecontent">
+        
+
+        {% for row in my_content_types[1] %}
+        <tr><td><br></td></tr>
+
+        <tr id={{row[0]}}>
+          <td>
+            <button class="btn btn-light" name={{row[0]}}  id="show_categories"
+            value={{row[0]}} onclick="create_categories_section(event)">Expand to categories</button>
+          </td>
+          {% for item in row %}
+            <td>{{item}}</td>
+          {% endfor %}
+        </tr>
+          <script>
+
+            function create_categories_section(event){
+
+              $.ajax({
+                url:"/get_categories_section_in_analytics",
+                type: "POST",
+                data: {months_filter_value: months_filters_value.value, type_filter_value: event.target.value},
+                success: function(data) {
+
+                    var expense_type = event.target.value
+                    var data_array = JSON.parse(data)
+                    data_array.forEach(function (item, index) {
+
+                      var newDiv = document.createElement("tr");
+                      newDiv.setAttribute("class", expense_type.concat('_categories'));
+                      var currentDiv = document.getElementById(expense_type);
+                      currentDiv.parentNode.insertBefore(newDiv, currentDiv.nextSibling);
+                      
+                      var td = newDiv.insertCell();
+                      btn = document.createElement("button")
+                      btn.innerText = "Expand to Sub-categories";
+                      btn.setAttribute("class", "btn btn-light")
+                      btn.setAttribute("id", 'go_to_sub_categories_btn')
+                      btn.setAttribute("value", expense_type)
+                      btn.setAttribute("onclick", 'create_sub_categories_section(event)')
+                      td.appendChild(btn);
+
+                      item_array = item.toString().split(',')
+                      item_array.forEach(function (value, index) {
+                        var td = newDiv.insertCell();
+                        td.appendChild(document.createTextNode(value));
+                        if (index == 0) {
+                          btn.setAttribute("name", value);
+                          newDiv.setAttribute("id", value);
+                        }
+
+                      })
+
+                    })
+
+                    var my_button = document.getElementsByName(expense_type)[0]
+                    my_button.innerText = "Collapse categories";
+                    my_button.setAttribute("onclick","remove_categories_section(event)");
+
+                    my_row = document.getElementById(expense_type)
+                    my_row.setAttribute("style", "background-color:#e9ecef; font-weight: bold;")
+                    
+                }
+              });
+            }
+
+
+            function create_sub_categories_section(event){
+
+              $.ajax({
+                url:"/get_sub_categories_section_in_analytics",
+                type: "POST",
+                data: {months_filter_value: months_filters_value.value, type_filter_value: event.target.value, category_filter_value: event.target.name},
+                success: function(data) {
+
+                    data_array = JSON.parse(data)
+                    data_array.forEach(function (item, index) {
+
+                      type_filter_value = event.target.value
+                      category_filter_value = event.target.name
+                      var newDiv = document.createElement("tr");
+                      type_class_name = type_filter_value.concat('_sub_categories ')
+                      category_class_name = category_filter_value.concat('_sub_categories')
+                      newDiv.setAttribute("class", type_class_name.concat(category_class_name));
+                      var currentDiv = document.getElementById(category_filter_value);
+                      currentDiv.parentNode.insertBefore(newDiv, currentDiv.nextSibling);
+                      
+                      var td = newDiv.insertCell();
+
+                      item_array = item.toString().split(',')
+                      item_array.forEach(function (value, index) {
+                        var td = newDiv.insertCell();
+                        td.appendChild(document.createTextNode(value));
+                      })
+
+                    })
+
+                    my_button = document.getElementsByName(category_filter_value)[0]
+                    my_button.innerText = "Collapse sub-categories";
+                    my_button.setAttribute("onclick","remove_sub_categories_section(event)");
+
+                    my_row = document.getElementById(category_filter_value)
+                    my_row.setAttribute("style", "background-color:#e9ecef; font-weight: bold;")
+                    
+                }
+              });
+            }
+
+
+          </script>
+        {% endfor %}  
+       
+          <script>
+            function remove_categories_section(event) {
+              categories_trs = document.getElementsByClassName(event.target.value.concat("_categories"))
+              sub_categories_trs = document.getElementsByClassName(event.target.value.concat("_sub_categories"))
+
+              my_categories_length = categories_trs.length
+              for (var index=0;index < my_categories_length;index++){
+                categories_trs[0].remove()
+                };
+
+              my_sub_categories_length = sub_categories_trs.length
+              for (var index=0;index < my_sub_categories_length;index++){
+                sub_categories_trs[0].remove()
+                };
+
+              my_button = document.getElementsByName(event.target.value)[0]
+              my_button.innerText = "Expand to categories";
+              my_button.setAttribute("onclick","create_categories_section(event)");
+
+              my_row = document.getElementById(event.target.value)
+              my_row.removeAttribute("style")
+
+            }
+
+
+            function remove_sub_categories_section(event) {
+              categories_trs = document.getElementsByClassName(event.target.name.concat("_sub_categories"))
+              my_length = categories_trs.length
+              for (var index=0;index < my_length;index++){
+                categories_trs[0].remove()
+                };
+
+              my_button = document.getElementsByName(event.target.name)[0]
+              my_button.innerText = "Expand to categories";
+              my_button.setAttribute("onclick","create_sub_categories_section(event)");
+
+              my_row = document.getElementById(event.target.name)
+              my_row.removeAttribute("style")
+
+            }
+
+          </script>
+
+    </tbody>
+
+  </table>
+
+{% endblock %}

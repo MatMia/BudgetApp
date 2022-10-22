@@ -35,8 +35,11 @@ body {
 #charts_btn, #return_to_budget_btn, #applied_filters_btn, #clear_filters_btn, #loading_form {
     background-color: #6c757d !important;
 }
-/* .sub_cat_chart {
-    position: absolute;
-    top:155px;
-    right: 700px;
-} */
+
+.sub_cat_filter, .type_filter {
+margin-left: 30px;
+}
+
+.header_months {
+    font-size: 20px !important;
+}

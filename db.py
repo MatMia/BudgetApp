@@ -30,6 +30,40 @@ class BudgetDB:
         con.commit()
         con.close()
 
+
+    def get_filters_parameters(active_filters):
+        where_criteria = ' WHERE '
+
+        if 'date_from' in active_filters:
+            where_criteria += "date between '" + active_filters['date_from'] + "' and '" + active_filters['date_to'] + "' "
+
+        if 'category_filter' in active_filters:
+            category_filters = str(active_filters['category_filter'])[1:-1]
+            if where_criteria == ' WHERE ':
+                where_criteria += "category in (" + category_filters + ") "
+            else:
+                where_criteria += "and category in (" + category_filters + ") "
+
+        if 'sub_category_filter' in active_filters:
+            sub_category_filters = str(active_filters['sub_category_filter'])[1:-1]
+            if where_criteria == ' WHERE ':
+                where_criteria += "sub_category in (" + sub_category_filters + ") "
+            else:
+                where_criteria += "and sub_category in (" + sub_category_filters + ") "
+
+        if 'type_filter' in active_filters:
+            type_filters = str(active_filters['type_filter'])[1:-1]
+            if where_criteria == ' WHERE ':
+                where_criteria += "expense_type in (" + type_filters + ") "
+            else:
+                where_criteria += "and expense_type in (" + type_filters + ") "
+
+        print(where_criteria)
+        return(where_criteria)
+
+
+
+
     def show_db(**kwargs):
         con = sqlite3.connect('budget.db')
         cur = con.cursor()
@@ -37,10 +71,11 @@ class BudgetDB:
         db_results = []
 
         if 'limit' in kwargs:
-            if 'date_from' in kwargs:
-                for row in cur.execute('''SELECT * FROM budget
-                    WHERE date BETWEEN ? and ?
-                    ORDER BY date LIMIT ? OFFSET ?''', (kwargs['date_from'], kwargs['date_to'], kwargs['limit'], kwargs['offset'])):
+            if 'active_filters' in kwargs:
+                where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+                for row in cur.execute('''SELECT * FROM budget'''
+                    + where_criteria + 
+                    '''ORDER BY date LIMIT ? OFFSET ?''', (kwargs['limit'], kwargs['offset'])):
                     db_results.append(row)
             else:
                 for row in cur.execute('''SELECT * FROM budget
@@ -48,10 +83,11 @@ class BudgetDB:
                     db_results.append(row)
 
         elif 'pie_chart' in kwargs:
-            if 'date_from' in kwargs:
-                for row in cur.execute('''SELECT category, round(sum(value),2) FROM budget
-                    WHERE date BETWEEN ? and ?
-                    GROUP BY category''', (kwargs['date_from'], kwargs['date_to'])):
+            if 'active_filters' in kwargs:
+                where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+                for row in cur.execute('''SELECT category, round(sum(value),2) FROM budget'''
+                    + where_criteria + 
+                    '''GROUP BY category'''):
                     db_results.append(row)
             else:
                 for row in cur.execute('''SELECT category, round(sum(value),2) FROM budget
@@ -61,10 +97,12 @@ class BudgetDB:
         elif 'sub_cat_pie_chart' in kwargs:
             category = kwargs['sub_cat_pie_chart']
 
-            if 'date_from' in kwargs:
-                for row in cur.execute('''SELECT sub_category, round(sum(value),2) FROM budget
-                    WHERE category = ? and date BETWEEN ? and ?
-                    GROUP BY sub_category''', (category,kwargs['date_from'], kwargs['date_to'])):
+            if 'active_filters' in kwargs:
+                where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+                for row in cur.execute('''SELECT sub_category, round(sum(value),2) FROM budget'''
+                    + where_criteria + 
+                    ''' and category = ?
+                    GROUP BY sub_category''', (category,)):
                     db_results.append(row)    
             else:
                 for row in cur.execute('''SELECT sub_category, round(sum(value),2) FROM budget
@@ -73,11 +111,12 @@ class BudgetDB:
                     db_results.append(row)
            
 
-        elif 'date_from' in kwargs:
-                for row in cur.execute('''SELECT * FROM budget
-                    WHERE date between ? and ?
-                    ORDER BY date''', (kwargs['date_from'], kwargs['date_to'])):
-                    db_results.append(row)
+        elif 'active_filters' in kwargs:
+            where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+            for row in cur.execute('''SELECT * FROM budget'''
+                + where_criteria + 
+                '''ORDER BY date'''):
+                db_results.append(row)
 
         else:
             for row in cur.execute('''SELECT * FROM budget
@@ -95,20 +134,25 @@ class BudgetDB:
         db_results = []
         
         if 'limit' in kwargs:
-            if 'date_from' in kwargs:
-                for row in cur.execute('''SELECT * FROM budget
-                    WHERE category = ? and sub_category = ? and date BETWEEN ? and ?
-                    ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['date_from'], kwargs['date_to'], kwargs['limit'], kwargs['offset'])):
-                        db_results.append(row[1:])
+            if 'active_filters' in kwargs:
+                where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+                for row in cur.execute('''SELECT * FROM budget'''
+                    + where_criteria + 
+                    ''' and category = ? and sub_category = ?
+                    ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['limit'], kwargs['offset'])):
+                    db_results.append(row[1:])
             else:
                 for row in cur.execute('''SELECT * FROM budget
                     WHERE category = ? and sub_category = ?
                     ORDER BY date LIMIT ? OFFSET ?''', (category, sub_category, kwargs['limit'], kwargs['offset'])):
-                        db_results.append(row[1:])      
-        elif 'date_from' in kwargs:
-            for row in cur.execute('''SELECT * FROM budget
-                WHERE category = ? and sub_category = ? and date BETWEEN ? and ?
-                ORDER BY date''', (category, sub_category, kwargs['date_from'], kwargs['date_to'])):
+                        db_results.append(row[1:])   
+
+        elif 'active_filters' in kwargs:
+            where_criteria = BudgetDB.get_filters_parameters(kwargs['active_filters'])
+            for row in cur.execute('''SELECT * FROM budget'''
+                + where_criteria + 
+                ''' and category = ? and sub_category = ?
+                ORDER BY date''', (category, sub_category)):
                     db_results.append(row)
         else:
             for row in cur.execute('''SELECT * FROM budget
@@ -269,16 +313,21 @@ class SubCategoriesDB:
         con.commit()
         con.close()
 
-    def show_db(type, category):
+    def show_db(**kwargs):
         con = sqlite3.connect('sub_categories.db')
         cur = con.cursor()
 
         db_results = []
 
-        for row in cur.execute('''SELECT sub_category FROM sub_categories
-            WHERE type = ? and category = ?
-            ORDER BY sub_category''', (type, category)):
-            db_results.append(row)
+        if "type" in kwargs:
+            for row in cur.execute('''SELECT sub_category FROM sub_categories
+                WHERE type = ? and category = ?
+                ORDER BY sub_category''', (kwargs["type"], kwargs["category"])):
+                db_results.append(row)
+        else:
+            for row in cur.execute('''SELECT sub_category FROM sub_categories
+                ORDER BY sub_category'''):
+                db_results.append(row)
 
         con.close()
         
@@ -292,3 +341,52 @@ class SubCategoriesDB:
         WHERE type = ? and category = ? and sub_category = ?''', (type, category, sub_category))
         con.commit()
         con.close()
+
+
+class Analytics():
+
+    def get_grouped_data_by_date_and_type(required_months_where_criteria):
+        con = sqlite3.connect('budget.db')
+        cur = con.cursor()
+
+        required_data = []
+
+        for row in cur.execute('''SELECT strftime('%Y-%m', date) as formatted_date, expense_type, round(sum(value),2) FROM budget
+        WHERE ''' + required_months_where_criteria + ''' GROUP BY formatted_date, expense_type'''):
+            required_data.append(row)
+
+        con.commit()
+        con.close()
+
+        return(required_data)
+
+
+    def get_grouped_data_by_date_type_and_category(required_months_where_criteria):
+        con = sqlite3.connect('budget.db')
+        cur = con.cursor()
+
+        required_data = []
+
+        for row in cur.execute('''SELECT strftime('%Y-%m', date) as formatted_date, expense_type, category, round(sum(value),2) FROM budget
+        WHERE ''' + required_months_where_criteria + ''' GROUP BY formatted_date, expense_type, category'''):
+            required_data.append(row)
+
+        con.commit()
+        con.close()
+
+        return(required_data)
+
+    def get_grouped_data_by_date_type_category_and_sub_category(required_months_where_criteria):
+        con = sqlite3.connect('budget.db')
+        cur = con.cursor()
+
+        required_data = []
+        print(required_months_where_criteria)
+        for row in cur.execute('''SELECT strftime('%Y-%m', date) as formatted_date, expense_type, category, sub_category, round(sum(value),2) FROM budget
+        WHERE ''' + required_months_where_criteria + ''' GROUP BY formatted_date, expense_type, category, sub_category'''):
+            required_data.append(row)
+
+        con.commit()
+        con.close()
+
+        return(required_data)

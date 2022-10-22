@@ -1,4 +1,4 @@
-from .db import BudgetDB, CategoriesDB, SubCategoriesDB, TypesDB
+import BudgetApp.db as db
 from flask_table import Table, Col
 
 class BudgetItemTable(Table):
@@ -53,16 +53,16 @@ class ShowBudgetTable():
 
     def show_budget_table(**kwargs):
         if 'limit' in kwargs:
-            if 'date_from' in kwargs:
-                db_results = BudgetDB.show_db(limit=kwargs['limit'], offset=kwargs['offset'], date_from=kwargs['date_from'], date_to=kwargs['date_to'])
+            if 'active_filters' in kwargs:
+                db_results = db.BudgetDB.show_db(limit=kwargs['limit'], offset=kwargs['offset'], active_filters=kwargs['active_filters'])
             else:
-                db_results = BudgetDB.show_db(limit=kwargs['limit'], offset=kwargs['offset'])
+                db_results = db.BudgetDB.show_db(limit=kwargs['limit'], offset=kwargs['offset'])
 
-        elif 'date_from' in kwargs:
-            db_results = BudgetDB.show_db(date_from=kwargs['date_from'], date_to=kwargs['date_to'])
+        elif 'active_filters' in kwargs:
+            db_results = db.BudgetDB.show_db(active_filters=kwargs['active_filters'])
 
         else:
-            db_results = BudgetDB.show_db()
+            db_results = db.BudgetDB.show_db()
 
         total_count = len(db_results)
         table_results = []
@@ -74,7 +74,7 @@ class ShowBudgetTable():
         return (table, value_sum, total_count)
 
     def show_types_table():
-        db_results = TypesDB.show_db()
+        db_results = db.TypesDB.show_db()
         table_results = []
         for record in db_results:
             table_results.append(TypesItem(record[0]))
@@ -83,17 +83,20 @@ class ShowBudgetTable():
 
     def show_categories_table(**kwargs):
         if 'type' in kwargs:
-            db_results = CategoriesDB.show_db(type=kwargs['type'])
+            db_results = db.CategoriesDB.show_db(type=kwargs['type'])
         else:
-            db_results = CategoriesDB.show_db()
+            db_results = db.CategoriesDB.show_db()
         table_results = []
         for record in db_results:
             table_results.append(CategoriesItem(record[0]))
         table = CategoriesItemTable(table_results)
         return (table)
 
-    def show_sub_categories_table(type, category):
-        db_results = SubCategoriesDB.show_db(type, category)
+    def show_sub_categories_table(**kwargs):
+        if 'type' in kwargs:
+            db_results = db.SubCategoriesDB.show_db(type=kwargs["type"], category=kwargs["category"])
+        else:
+            db_results = db.SubCategoriesDB.show_db()
         table_results = []
         for record in db_results:
             table_results.append(SubCategoriesItem(record[0]))
@@ -102,28 +105,28 @@ class ShowBudgetTable():
 
     def show_sub_category_data_table(category, sub_category, **kwargs):
         if 'limit' in kwargs:
-            if 'date_from' in kwargs:
-                db_results = BudgetDB.sub_category_data_table(category, sub_category, date_from=kwargs['date_from'],date_to=kwargs['date_to'], limit=kwargs['limit'],offset=kwargs['offset'])
+            if 'active_filters' in kwargs:
+                db_results = db.BudgetDB.sub_category_data_table(category, sub_category, active_filters=kwargs['active_filters'], limit=kwargs['limit'],offset=kwargs['offset'])
             else:
-                db_results = BudgetDB.sub_category_data_table(category, sub_category, limit=kwargs['limit'],offset=kwargs['offset'])
-        elif 'date_from' in kwargs:
-            db_results = BudgetDB.sub_category_data_table(category, sub_category, date_from=kwargs['date_from'],date_to=kwargs['date_to'])
+                db_results = db.BudgetDB.sub_category_data_table(category, sub_category, limit=kwargs['limit'],offset=kwargs['offset'])
+        elif 'active_filters' in kwargs:
+            db_results = db.BudgetDB.sub_category_data_table(category, sub_category, active_filters=kwargs['active_filters'])
         else:
-            db_results = BudgetDB.sub_category_data_table(category, sub_category)
+            db_results = db.BudgetDB.sub_category_data_table(category, sub_category)
             
         total_count = len(db_results)
         return(db_results, total_count)
 
 class ShowChartsData():
     def show_pie_chart(**kwargs):
-        if 'date_from' in kwargs:
-            db_results = BudgetDB.show_db(pie_chart='pie_chart', date_from=kwargs['date_from'], date_to=kwargs['date_to'])
+        if 'active_filters' in kwargs:
+            db_results = db.BudgetDB.show_db(pie_chart='pie_chart', active_filters=kwargs['active_filters'])
         else:
-            db_results = BudgetDB.show_db(pie_chart='pie_chart')
+            db_results = db.BudgetDB.show_db(pie_chart='pie_chart')
         return(db_results)
     def sub_cat_chart_data(category, **kwargs):
-        if 'date_from' in kwargs:
-            db_results = BudgetDB.show_db(sub_cat_pie_chart=category, date_from=kwargs['date_from'], date_to=kwargs['date_to'])
+        if 'active_filters' in kwargs:
+            db_results = db.BudgetDB.show_db(sub_cat_pie_chart=category, active_filters=kwargs['active_filters'])
         else:
-            db_results = BudgetDB.show_db(sub_cat_pie_chart=category)
+            db_results = db.BudgetDB.show_db(sub_cat_pie_chart=category)
         return(db_results)    
