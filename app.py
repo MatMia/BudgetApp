@@ -3,6 +3,7 @@ import secrets
 from sre_compile import isstring
 from flask import Flask, flash, request, render_template, session, redirect, url_for, jsonify
 from flask_login import LoginManager, login_user, current_user, login_required
+from flask import session
 import json
 import numpy as np
 from markupsafe import escape
@@ -14,15 +15,17 @@ from flask_paginate import Pagination, get_page_parameter
 import random
 import uuid
 from .upload_data import importXLS
+from datetime import timedelta
+import requests
 
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex()
-
 
 #login section
 login_manager = LoginManager()
+login_manager.login_view = 'login'
 login_manager.init_app(app)
+app.secret_key = secrets.token_hex()
 
 class User(object):
     def __init__(self, user_id):
@@ -41,7 +44,9 @@ class User(object):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    if user_id is not None:
+        return User(user_id)
+    return None
 
 @app.route("/")
 def login_page():
@@ -55,6 +60,8 @@ def login():
 
         if verify_login_details(user_id, user_pwd):
             user = load_user(user_id)
+            session.permanent = True
+            login_user(user, remember=True, duration=timedelta(days=365), force=True)
             return redirect(url_for('expenses_main'))
         else:
             flash("Incorrect user name or password.")
@@ -180,6 +187,7 @@ def input_sub_category():
 @app.route("/db_state")
 @login_required
 def show_db_state():
+    print(current_user.user_id)
     types = ShowBudgetTable.show_types_table()
     categories = ShowBudgetTable.show_categories_table()
     sub_categories = ShowBudgetTable.show_sub_categories_table()
