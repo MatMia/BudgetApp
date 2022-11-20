@@ -16,7 +16,6 @@ import random
 import uuid
 from .upload_data import importXLS
 from datetime import timedelta
-import requests
 
 
 app = Flask(__name__)
@@ -61,7 +60,7 @@ def login():
         if verify_login_details(user_id, user_pwd):
             user = load_user(user_id)
             session.permanent = True
-            login_user(user, remember=True, duration=timedelta(days=365), force=True)
+            login_user(user, remember=True, duration=timedelta(days=1), force=True, fresh=True)
             return redirect(url_for('expenses_main'))
         else:
             flash("Incorrect user name or password.")
@@ -77,11 +76,22 @@ def verify_login_details(user_id, user_pwd):
 #end of login section
 
 
+from functools import wraps
+def my_login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            if current_user.user_id:
+                return f(*args, **kwargs)
+        except:
+            return redirect(url_for('login'))
+    return decorated_function
+
 
 
 #single input page and input form endpoints
 @app.route("/single_input")
-@login_required
+@my_login_required
 def expenses_main():
     print(current_user.user_id)
     types = ShowBudgetTable.show_types_table()
@@ -91,7 +101,7 @@ def expenses_main():
                     types=types, categories=[], sub_categories=[])
 
 @app.route('/single_input', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def expense_input():
     if request.form.get("btn") == "submit_form":
         return InputForm.main_input_form()
@@ -113,7 +123,7 @@ def expense_input():
 
 #bulk upload
 @app.route('/upload_file', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def upload_file():
     if request.form.get("submit_xls"):
         file = importXLS(request.files['xls_file'])
@@ -156,7 +166,7 @@ def upload_file():
 
 #read categories from the type value - AJAX
 @app.route('/input_category', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def input_category():
         active_type = [name for name, value in request.form.to_dict().items()][0]
         categories = ShowBudgetTable.show_categories_table(type=active_type)
@@ -168,7 +178,7 @@ def input_category():
 
 #read sub_categories from the category value - AJAX
 @app.route('/input_sub_category', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def input_sub_category():
     posted_date = []
     for name, item in request.form.items():
@@ -185,7 +195,7 @@ def input_sub_category():
 
 #budget status endpoints
 @app.route("/db_state")
-@login_required
+@my_login_required
 def show_db_state():
     print(current_user.user_id)
     types = ShowBudgetTable.show_types_table()
@@ -211,7 +221,7 @@ def show_db_state():
 
 
 @app.route("/db_state", methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def return_to_input():
     if request.form.get("delete_record"):
         BudgetDB.delete_record(request.form.get("delete_record"))
@@ -246,7 +256,7 @@ def return_to_input():
 
 
 @app.route("/db_state/<filters>", methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def show_db_state_filters(filters):
     types = ShowBudgetTable.show_types_table()
     categories = ShowBudgetTable.show_categories_table()
@@ -325,7 +335,7 @@ def show_db_state_filters(filters):
 
 #display unfiltered pie charts
 @app.route('/db_state/pie')
-@login_required
+@my_login_required
 def pie():
     types = ShowBudgetTable.show_types_table()
     categories = ShowBudgetTable.show_categories_table()
@@ -349,7 +359,7 @@ def pie():
 
 
 @app.route('/db_state/pie', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def pie_charts():
     if request.form.get("menu_input_form") == "my_input_form":
         return redirect(url_for('expenses_main'))
@@ -386,7 +396,7 @@ def pie_charts():
 
 #display filtered pie charts
 @app.route('/pie/<filters>', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def filtered_pie(filters):
     types = ShowBudgetTable.show_types_table()
     categories = ShowBudgetTable.show_categories_table()
@@ -467,7 +477,7 @@ def filtered_pie(filters):
 
 #read sub-category pie chart data - AJAX
 @app.route('/sub_category_chart', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def sub_category_chart():
         category = [name for name, value in request.form.to_dict().items()]
         sub_cat_chart_data = ShowChartsData.sub_cat_chart_data(category)
@@ -480,7 +490,7 @@ def sub_category_chart():
         return(dict_without_colors)
 
 @app.route('/sub_category_data_table', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def get_sub_cat_data_table():
     posted_data = []
     sub_cat_data_table_dict = {}
@@ -507,7 +517,7 @@ def get_sub_cat_data_table():
 
 #read sub-category filtered pie chart data - AJAX
 @app.route('/filtered_sub_category_chart', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def filtered_sub_category_chart():
     posted_data = []
     for name,value in request.form.items():
@@ -532,7 +542,7 @@ def filtered_sub_category_chart():
 
 
 @app.route('/filtered_sub_category_data_table', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def get_filtered_sub_cat_data_table():
     posted_data = []
     sub_cat_data_table_dict = {}
@@ -566,14 +576,14 @@ def get_filtered_sub_cat_data_table():
 
 #types endpoints
 @app.route("/types")
-@login_required
+@my_login_required
 def show_db_types():
     table = ShowBudgetTable.show_types_table()
     return render_template("types_table.html", table=table, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/types', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def types_actions():
     if request.form.get("add_type") == "my_type":
         return InputForm.type_input_form()
@@ -606,14 +616,14 @@ def types_actions():
 
 #categories endpoints
 @app.route("/categories/<type>")
-@login_required
+@my_login_required
 def show_db_categories(type):
     table = ShowBudgetTable.show_categories_table(type=type)
     return render_template("categories_table.html", table=table, type=type, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/categories/<type>', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def categories_actions(type):
     if request.form.get("add_category") == "my_category":
         return InputForm.category_input_form(type)
@@ -649,14 +659,14 @@ def categories_actions(type):
 
 #sub_categories endpoints
 @app.route("/sub_categories/<category>, <type>")
-@login_required
+@my_login_required
 def show_db_sub_categories(category, type):
     table = ShowBudgetTable.show_sub_categories_table(type=type, category=category)
     return render_template("sub_categories_table.html", table=table, category=category, type=type, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
 @app.route('/sub_categories/<category>, <type>', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def sub_categories_actions(category, type):
     if request.form.get("add_sub_category") == "my_sub_category":
         return InputForm.sub_category_input_form(category, type)
@@ -687,14 +697,14 @@ def sub_categories_actions(category, type):
 #analytics endpoints
 
 @app.route("/M2Manalytics")
-@login_required
+@my_login_required
 def show_main_analytics():
     return render_template("monthToMonth.html", \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link active", \
             months_filter_value = "", my_content_types=[""], my_content_categories=[""])
 
 @app.route('/M2Manalytics', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def main_analytics():
     if request.form.get("btn") == "submit_form":
         return InputForm.main_input_form()
@@ -727,7 +737,7 @@ def main_analytics():
 
 
 @app.route('/get_categories_section_in_analytics', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def get_categories_section_in_analytics():
     accepted_data = [value for name, value in request.form.to_dict().items()]
     months_filter_value = accepted_data[0]
@@ -748,7 +758,7 @@ def get_categories_section_in_analytics():
 
 
 @app.route('/get_sub_categories_section_in_analytics', methods=['GET', 'POST'])
-@login_required
+@my_login_required
 def get_sub_categories_section_in_analytics():
 
     accepted_data = [value for name, value in request.form.to_dict().items()]
