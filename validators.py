@@ -1,4 +1,4 @@
-import BudgetApp.display_data as display_data
+import display_data as display_data
 import time
 
 #supporting functions - type validation
