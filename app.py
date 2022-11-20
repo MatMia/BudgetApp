@@ -7,14 +7,14 @@ from flask import session
 import json
 import numpy as np
 from markupsafe import escape
-from BudgetApp.db import *
-from BudgetApp.display_data import *
-from BudgetApp.validators import *
-import BudgetApp.monthToMonth as monthToMonth
+from db import *
+from display_data import *
+from validators import *
+import monthToMonth as monthToMonth
 from flask_paginate import Pagination, get_page_parameter
 import random
 import uuid
-from .upload_data import importXLS
+from upload_data import importXLS
 from datetime import timedelta
 
 
