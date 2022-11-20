@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from BudgetApp.validators import InputFormValidation
-from BudgetApp.db import BudgetDB
+from validators import InputFormValidation
+from db import BudgetDB
 import uuid
 
 class importCSV(object):
