@@ -1,4 +1,4 @@
-import db as db
+import db.db as db
 from flask_table import Table, Col
 
 class BudgetItemTable(Table):

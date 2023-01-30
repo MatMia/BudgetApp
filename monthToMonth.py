@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import db as db
+import db.db as db
 
 class MonthsComparison(object):
 

@@ -7,7 +7,7 @@ from flask import session
 import json
 import numpy as np
 from markupsafe import escape
-from db import *
+from db.db import *
 from display_data import *
 from validators import *
 import monthToMonth as monthToMonth
@@ -29,6 +29,7 @@ login_manager.login_view = 'login'
 login_manager.init_app(app)
 app.secret_key = secrets.token_hex()
 login_manager.session_protection = "strong"
+
 class User(object):
     def __init__(self, user_id):
         self.user_id = user_id
@@ -799,7 +800,7 @@ def succesfull_filters(active_filters):
 
 #insert records to DB
 def insert_to_budget_db(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date):
-    BudgetDB.insert_row(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date, clear_db='Y')
+    BudgetDB.insert_row(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date, clear_db='N')
 
 def insert_to_types_db(type_name):
     TypesDB.insert_row(type_name, clear_db='N')
