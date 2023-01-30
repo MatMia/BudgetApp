@@ -55,6 +55,7 @@ def load_user(user_id):
 def login_page():
     return render_template("login_form.html")
 
+@login_required
 @app.route("/", methods=['GET', 'POST'])
 def login():
     if request.form.get("login_btn") == "login_btn":
@@ -81,6 +82,7 @@ def verify_login_details(user_id, user_pwd):
 
 
 #single input page and input form endpoints
+@login_required
 @app.route("/single_input")
 def expenses_main():
     types = ShowBudgetTable.show_types_table()
@@ -90,6 +92,7 @@ def expenses_main():
                     types=types, categories=[], sub_categories=[])
 
 @app.route('/single_input', methods=['GET', 'POST'])
+@login_required
 def expense_input():
     if request.form.get("btn") == "submit_form":
         return InputForm.main_input_form()
