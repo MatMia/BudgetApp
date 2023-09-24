@@ -1,37 +1,73 @@
-<html lang="en"><head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
 
   <title>Home Budget Application</title>
 
-  <!-- Bootstrap core CSS -->
-  <link href="../static/bootstrap.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="../static/override_default.css">
+  <link rel="stylesheet" href="../static/login_form.css">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
 
 </head>
 
 <body class="text-center">
 
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+      <ul class=flashes>
+      {% for message in messages %}
+      {{ message }}
+      {% endfor %}
+      {% endif %}
+      {% endwith %}
+
   <div class="container">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js" integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz" crossorigin="anonymous"></script>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul class=flashes>
-        {% for message in messages %}
-        {{ message }}
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+    <form method="POST" autocomplete="off", class="form-signin">
+      <img class="mb-4" src="../static/budget_logo.jpg" alt="" width="72" height="72">
+      <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+      <label class="sr-only">UserId</label>
+      <input type="user" id="userId" name="userId", class="form-control" placeholder="UserID" required="" autofocus="">
+      <label for="inputPassword" class="sr-only">Password</label>
+      <input type="password" id="inputPassword" name="password" class="form-control" pattern="^([a-zA-Z0-9\?\!]){6,20}$" placeholder="Password" required="">
+      <br />
+      <button class="btn btn-secondary" name="login_btn" value="login_btn">Sign in</button>
+    </form>
 
-  <form method="POST" autocomplete="off", class="form-signin">
-    <img class="mb-4" src="../static/budget_logo.jpg" alt="" width="72" height="72">
-    <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
-    <label class="sr-only">UserId</label>
-    <input type="user" id="userId" name="userId", class="form-control" placeholder="UserID" required="" autofocus="">
-    <label for="inputPassword" class="sr-only">Password</label>
-    <input type="password" id="inputPassword" name="password" class="form-control" pattern="^([a-zA-Z0-9\?\!]){6,20}$" placeholder="Password" required="">
-    <br />
-    <button class="btn btn-secondary" name="login_btn" value="login_btn">Sign in</button>
-  </form>
-</div>
+  </div>   
 
-</body></html>
+  <br>
+  <br>
+    <button class="btn btn-secondary" name="create_usr_btn" value="create_usr_btn" data-bs-toggle="modal" data-bs-target="#loginModal" data-bs-whatever="@mdo">Create User</button>
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">New User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" autocomplete="off">
+          <div class="modal-body">
+              <div class="mb-3">
+                <label for="sub_category_name" class="col-form-label">Username:</label>
+                <input type="text" class="form-control" name="username" required autocomplete="False">
+              </div>
+              <div class="mb-3">
+                <label for="sub_category_name" class="col-form-label">Password:</label>
+                <input type="password" class="form-control" name="password" required autocomplete="False">
+              </div>
+          </div>
+          <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button class="btn btn-primary" name="add_user" value="new_user">Submit</button>
+          </div>
+          </form>
+        </div>
+    </div>
+  </div>
+
+
+  </body>

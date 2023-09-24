@@ -1,6 +1,54 @@
-from datetime import datetime
 import sqlite3
 
+class LoginDB:
+
+    def __init__(self) -> None:
+        pass
+
+    def authenticate_login(username: str, password: str) -> bool:
+        
+        con = sqlite3.connect('users.db')
+        cur = con.cursor()
+        
+        cur.execute('''SELECT * FROM users WHERE 
+                    username = ? and password = ?''', (username, password))
+        
+        if not cur.fetchone():
+            return False
+        else:
+            return True
+        
+    def add_new_user(self, username: str, password: str) -> bool:
+
+        con = sqlite3.connect('users.db')
+        cur = con.cursor()
+        
+        cur.execute('''INSERT INTO users VALUES (?,?)''', (username, password))
+        con.commit()
+        con.close()
+
+        return self.authenticate_login(username, password)
+    
+    def validate_new_user_credentials(self, username: str, password: str) -> bool:
+        if 6 < len(password) < 20:
+            return True
+        else:
+            return False
+        
+    def check_user_existance(self,username: str) -> bool:
+        con = sqlite3.connect('users.db')
+        cur = con.cursor()
+        
+        cur.execute('''SELECT * FROM users WHERE 
+                    username = ?''', (username,))
+        
+        if cur.fetchone():
+            return False
+        else:
+            return True
+
+        
+ 
 class BudgetDB:
 
     def insert_row(input_uuid, name, value, category, sub_category, expense_type, date, **kwargs):
@@ -60,9 +108,6 @@ class BudgetDB:
 
         print(where_criteria)
         return(where_criteria)
-
-
-
 
     def show_db(**kwargs):
         con = sqlite3.connect('budget.db')

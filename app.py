@@ -2,12 +2,10 @@ import json
 import secrets
 from sre_compile import isstring
 from flask import Flask, flash, request, render_template, session, redirect, url_for, jsonify
-from flask_login import LoginManager, login_user, current_user, login_required
+from flask_login import LoginManager, login_user, login_required
 from flask import session
-import json
 import numpy as np
-from markupsafe import escape
-from db.db import *
+from db import db
 from display_data import *
 from validators import *
 import monthToMonth as monthToMonth
@@ -20,15 +18,15 @@ from datetime import timedelta
 
 app = Flask(__name__)
 app.config.update(
-   REMEMBER_COOKIE_SECURE = True,
-   SESSION_COOKIE_SAMESITE='None',
+   REMEMBER_COOKIE_SECURE = False,
+   SESSION_COOKIE_SAMESITE='Strict',
 )
+
 #login section
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 app.secret_key = secrets.token_hex()
-login_manager.session_protection = "strong"
 
 class User(object):
     def __init__(self, user_id):
@@ -55,7 +53,6 @@ def load_user(user_id):
 def login_page():
     return render_template("login_form.html")
 
-@login_required
 @app.route("/", methods=['GET', 'POST'])
 def login():
     if request.form.get("login_btn") == "login_btn":
@@ -64,16 +61,32 @@ def login():
 
         if verify_login_details(user_id, user_pwd):
             user = load_user(user_id)
-            session.permanent = True
-            login_user(user, remember=True, duration=timedelta(days=1), force=True, fresh=True)
+            login_user(user, remember=True, duration=timedelta(hours=1))
             return redirect(url_for('expenses_main'))
         else:
             flash("Incorrect user name or password.")
             return redirect(url_for('login_page'))
+        
+    elif request.form.get("add_user"):
+        username = request.form.get("username")
+        password = request.form.get("password") 
+        new_user_request = db.LoginDB
+        print(username, password)
+        if not new_user_request.validate_new_user_credentials(new_user_request, username, password):
+            flash("User password doesn't meet password criteria: needs to be between 6 and 20 chars.")
+            return redirect(url_for('login_page'))
+        if not new_user_request.check_user_existance(new_user_request,username):
+            flash("User already exists.")
+            return redirect(url_for('login_page'))
+        if new_user_request.add_new_user(new_user_request,username, password):
+            flash("User has been created sucesfully.")
+        else:
+            flash("User hasn't been created.")
+        return redirect(url_for('login_page'))
 
-def verify_login_details(user_id, user_pwd):
-    if (user_id == "Mati" and user_pwd == "Boniszek2") or \
-        (user_id == "Paula" and user_pwd == "Boniszek1"):
+
+def verify_login_details(user_id: str, user_pwd: str) -> bool:
+    if db.LoginDB.authenticate_login(user_id, user_pwd):
         return True
     else:
         return False
@@ -92,7 +105,7 @@ def expenses_main():
                     types=types, categories=[], sub_categories=[])
 
 @app.route('/single_input', methods=['GET', 'POST'])
-@login_required
+@login_required 
 def expense_input():
     if request.form.get("btn") == "submit_form":
         return InputForm.main_input_form()
@@ -113,6 +126,7 @@ def expense_input():
         return redirect(url_for('show_main_analytics'))
 
 #bulk upload
+@login_required
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.form.get("submit_xls"):
@@ -155,6 +169,7 @@ def upload_file():
             input_form_buttom="nav-link active", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link", )
 
 #read categories from the type value - AJAX
+@login_required
 @app.route('/input_category', methods=['GET', 'POST'])
 def input_category():
         active_type = [name for name, value in request.form.to_dict().items()][0]
@@ -166,6 +181,7 @@ def input_category():
 
 
 #read sub_categories from the category value - AJAX
+@login_required
 @app.route('/input_sub_category', methods=['GET', 'POST'])
 def input_sub_category():
     posted_date = []
@@ -182,6 +198,7 @@ def input_sub_category():
 
 
 #budget status endpoints
+@login_required
 @app.route("/db_state")
 def show_db_state():
     types = ShowBudgetTable.show_types_table()
@@ -205,7 +222,7 @@ def show_db_state():
             date_from = "", date_to = "", category_filter = "Nothing Selected", sub_category_filter = "Nothing Selected", type_filter = "Nothing Selected", \
                 types=types, categories=categories, sub_categories=sub_categories)
 
-
+@login_required
 @app.route("/db_state", methods=['GET', 'POST'])
 def return_to_input():
     if request.form.get("delete_record"):
@@ -239,7 +256,7 @@ def return_to_input():
     elif request.form.get("btn") == "charts":
         return redirect(url_for('pie'))
 
-
+@login_required
 @app.route("/db_state/<filters>", methods=['GET', 'POST'])
 def show_db_state_filters(filters):
     types = ShowBudgetTable.show_types_table()
@@ -318,6 +335,7 @@ def show_db_state_filters(filters):
 
 
 #display unfiltered pie charts
+@login_required
 @app.route('/db_state/pie')
 def pie():
     types = ShowBudgetTable.show_types_table()
@@ -341,6 +359,7 @@ def pie():
                 types=types, categories=categories, sub_categories=sub_categories)
 
 
+@login_required
 @app.route('/db_state/pie', methods=['GET', 'POST'])
 def pie_charts():
     if request.form.get("menu_input_form") == "my_input_form":
@@ -377,6 +396,7 @@ def pie_charts():
 
 
 #display filtered pie charts
+@login_required
 @app.route('/pie/<filters>', methods=['GET', 'POST'])
 def filtered_pie(filters):
     types = ShowBudgetTable.show_types_table()
@@ -457,6 +477,7 @@ def filtered_pie(filters):
 
 
 #read sub-category pie chart data - AJAX
+@login_required
 @app.route('/sub_category_chart', methods=['GET', 'POST'])
 def sub_category_chart():
         category = [name for name, value in request.form.to_dict().items()]
@@ -469,6 +490,7 @@ def sub_category_chart():
 
         return(dict_without_colors)
 
+@login_required
 @app.route('/sub_category_data_table', methods=['GET', 'POST'])
 def get_sub_cat_data_table():
     posted_data = []
@@ -495,6 +517,7 @@ def get_sub_cat_data_table():
 
 
 #read sub-category filtered pie chart data - AJAX
+@login_required
 @app.route('/filtered_sub_category_chart', methods=['GET', 'POST'])
 def filtered_sub_category_chart():
     posted_data = []
@@ -508,7 +531,6 @@ def filtered_sub_category_chart():
     type_filter =  posted_data[5].split(',')
     active_filters = Filters.get_active_filters({"date_from": date_from, "date_to" : date_to, "category_filter" : category_filter, \
         "sub_category_filter" : sub_category_filter, "type_filter" : type_filter})
-    print(active_filters)
     sub_cat_chart_data = ShowChartsData.sub_cat_chart_data(category, active_filters=active_filters)
     dict_without_colors = {}
 
@@ -518,7 +540,7 @@ def filtered_sub_category_chart():
 
     return(dict_without_colors)
 
-
+@login_required
 @app.route('/filtered_sub_category_data_table', methods=['GET', 'POST'])
 def get_filtered_sub_cat_data_table():
     posted_data = []
@@ -552,12 +574,14 @@ def get_filtered_sub_cat_data_table():
 
 
 #types endpoints
+@login_required
 @app.route("/types")
 def show_db_types():
     table = ShowBudgetTable.show_types_table()
     return render_template("types_table.html", table=table, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
+@login_required
 @app.route('/types', methods=['GET', 'POST'])
 def types_actions():
     if request.form.get("add_type") == "my_type":
@@ -590,12 +614,14 @@ def types_actions():
 
 
 #categories endpoints
+@login_required
 @app.route("/categories/<type>")
 def show_db_categories(type):
     table = ShowBudgetTable.show_categories_table(type=type)
     return render_template("categories_table.html", table=table, type=type, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
+@login_required
 @app.route('/categories/<type>', methods=['GET', 'POST'])
 def categories_actions(type):
     if request.form.get("add_category") == "my_category":
@@ -631,12 +657,14 @@ def categories_actions(type):
 
 
 #sub_categories endpoints
+@login_required
 @app.route("/sub_categories/<category>, <type>")
 def show_db_sub_categories(category, type):
     table = ShowBudgetTable.show_sub_categories_table(type=type, category=category)
     return render_template("sub_categories_table.html", table=table, category=category, type=type, \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link active", analytics_button = "nav-link")
 
+@login_required
 @app.route('/sub_categories/<category>, <type>', methods=['GET', 'POST'])
 def sub_categories_actions(category, type):
     if request.form.get("add_sub_category") == "my_sub_category":
@@ -666,13 +694,14 @@ def sub_categories_actions(category, type):
 
 
 #analytics endpoints
-
+@login_required
 @app.route("/M2Manalytics")
 def show_main_analytics():
     return render_template("monthToMonth.html", \
         input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link active", \
             months_filter_value = "", my_content_types=[""], my_content_categories=[""])
 
+@login_required
 @app.route('/M2Manalytics', methods=['GET', 'POST'])
 def main_analytics():
     if request.form.get("btn") == "submit_form":
@@ -704,7 +733,7 @@ def main_analytics():
             input_form_buttom="nav-link", current_budget_button="nav-link", categories_button = "nav-link", analytics_button = "nav-link active", \
                 months_filter_value = months_filter_value, my_content_types = months_data_grouped_by_date_and_type)
 
-
+@login_required
 @app.route('/get_categories_section_in_analytics', methods=['GET', 'POST'])
 def get_categories_section_in_analytics():
     accepted_data = [value for name, value in request.form.to_dict().items()]
@@ -724,7 +753,7 @@ def get_categories_section_in_analytics():
 
     return(months_data_grouped_by_date_type_and_category_json)
 
-
+@login_required
 @app.route('/get_sub_categories_section_in_analytics', methods=['GET', 'POST'])
 def get_sub_categories_section_in_analytics():
 
@@ -830,9 +859,6 @@ class InputForm():
         expense_date = request.form.get("expense_date")
         input_uuid = str(uuid.uuid4())
 
-        print(expense_value_type)
-        print(expense_value)
-
         nameValidator = InputFormValidation(expense_name, "expense_name")
         valueValidator = InputFormValidation(expense_value, "expense_value")
 
@@ -855,7 +881,6 @@ class InputForm():
         # summary validation condition    
         if name_boolean is True and value_boolean is True:
             insert_to_budget_db(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date)
-            print(expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date)
             return succesfull_message_budget('submit', name=expense_name, value=expense_value)
         else:
             return render_template("single_input_from.html", validity_class_name="form-control is-invalid", validity_class_value="form-control is-invalid", \
