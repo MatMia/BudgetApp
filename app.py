@@ -71,7 +71,6 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password") 
         new_user_request = db.LoginDB
-        print(username, password)
         if not new_user_request.validate_new_user_credentials(new_user_request, username, password):
             flash("User password doesn't meet password criteria: needs to be between 6 and 20 chars.")
             return redirect(url_for('login_page'))

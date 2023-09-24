@@ -106,7 +106,6 @@ class BudgetDB:
             else:
                 where_criteria += "and expense_type in (" + type_filters + ") "
 
-        print(where_criteria)
         return(where_criteria)
 
     def show_db(**kwargs):
@@ -211,7 +210,6 @@ class BudgetDB:
 
 
     def delete_record(delete_id):
-        print(delete_id)
         con = sqlite3.connect('budget.db')
         cur = con.cursor()
 
@@ -426,7 +424,6 @@ class Analytics():
         cur = con.cursor()
 
         required_data = []
-        print(required_months_where_criteria)
         for row in cur.execute('''SELECT strftime('%Y-%m', date) as formatted_date, expense_type, category, sub_category, round(sum(value),2) FROM budget
         WHERE ''' + required_months_where_criteria + ''' GROUP BY formatted_date, expense_type, category, sub_category'''):
             required_data.append(row)
