@@ -288,7 +288,7 @@ def show_db_state_filters(filters):
         table = paged_db_results[0] 
 
         if request.form.get("delete_record"):
-            BudgetDB.delete_record(request.form.get("delete_record"))
+            db.BudgetDB.delete_record(request.form.get("delete_record"))
             return succesfull_message_budget('delete')
 
         elif request.form.get("menu_input_form") == "my_input_form":
@@ -587,7 +587,7 @@ def types_actions():
         return InputForm.type_input_form()
 
     elif request.form.get("delete_type_record"):
-        TypesDB.delete_record(request.form.get("delete_type_record"))
+        db.TypesDB.delete_record(request.form.get("delete_type_record"))
         return succesfull_message_types('delete', request.form.get("delete_type_record"))
 
     elif request.form.get("show_categories"):
@@ -627,7 +627,7 @@ def categories_actions(type):
         return InputForm.category_input_form(type)
 
     elif request.form.get("delete_category_record"):
-        CategoriesDB.delete_record(request.form.get("delete_category_record"), type)
+        db.CategoriesDB.delete_record(request.form.get("delete_category_record"), type)
         return succesfull_message_categories('delete', request.form.get("delete_category_record"), type)
 
     elif request.form.get("show_subcategories"):
@@ -670,7 +670,7 @@ def sub_categories_actions(category, type):
         return InputForm.sub_category_input_form(category, type)
 
     elif request.form.get("delete_sub_category_record"):
-        SubCategoriesDB.delete_record(type, category, request.form.get("delete_sub_category_record"))
+        db.SubCategoriesDB.delete_record(type, category, request.form.get("delete_sub_category_record"))
         return succesfull_message_sub_categories('delete', request.form.get("delete_sub_category_record"), category, type)
 
     elif request.form.get("btn") == "return_to_categories":
@@ -831,16 +831,16 @@ def succesfull_filters(active_filters):
 
 #insert records to DB
 def insert_to_budget_db(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date):
-    BudgetDB.insert_row(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date, clear_db='N')
+    db.BudgetDB.insert_row(input_uuid, expense_name, expense_value, expense_category, expense_sub_category, expense_type, expense_date, clear_db='N')
 
 def insert_to_types_db(type_name):
-    TypesDB.insert_row(type_name, clear_db='N')
+    db.TypesDB.insert_row(type_name, clear_db='N')
 
 def insert_to_categories_db(category_name, type):
-    CategoriesDB.insert_row(category_name, type, clear_db='N')
+    db.CategoriesDB.insert_row(category_name, type, clear_db='N')
 
 def insert_to_sub_categories_db(type, category, sub_category_name):
-    SubCategoriesDB.insert_row(type, category, sub_category_name, clear_db='N')
+    db.SubCategoriesDB.insert_row(type, category, sub_category_name, clear_db='N')
 
 
 
