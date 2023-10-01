@@ -225,7 +225,7 @@ def show_db_state():
 @app.route("/db_state", methods=['GET', 'POST'])
 def return_to_input():
     if request.form.get("delete_record"):
-        BudgetDB.delete_record(request.form.get("delete_record"))
+        db.BudgetDB.delete_record(request.form.get("delete_record"))
         return succesfull_message_budget('delete')
 
     elif request.form.get("menu_input_form") == "my_input_form":
