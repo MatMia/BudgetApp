@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+{% endblock %}
+
+{% block content %}
+
+<h3>Modify Record</h3>
+
+      
+      {% for row in record_details_table.items %}
+
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Record Details</h5>
+            </div>
+
+              <form method="POST" autocomplete="off">
+
+              <div class="modal-body">
+
+                  <div class="mb-3">
+                    <label for="category_name" class="col-form-label">Name:</label>
+                    <input type="text" class="form-control" value={{row.name}} name="record_name" required>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="category_name" class="col-form-label">Value:</label>
+                    <input type="text" class="form-control" value={{row.value}} name="record_value" required>
+                  </div>
+
+                  <div class="input-group mb-3">
+                    <label class="input-group-text" for="inputGroupSelect01">Type</label>
+                    <select class="form-select" id="expense_type" name="expense_type" required>
+                      <option selected hidden>{{row.expense_type}}</option> 
+                      {% for type in types.items %}
+                      <option>{{type.name}}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="input-group mb-3">
+                    <label class="input-group-text" for="inputGroupSelect01">Category</label>
+                    <select class="form-select" id="expense_category" name="expense_category" required>
+                      <option selected hidden>{{row.category}}</option> 
+                    </select>
+                  </div>
+
+                  <div class="input-group mb-3">
+                    <label class="input-group-text" for="inputGroupSelect01">Sub_category:</label>
+                    <select class="form-select" id ="expense_sub_category" name="expense_sub_category" required>
+                      <option selected hidden>{{row.sub_category}}</option> 
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="category_name" class="form-label">Date:</label>
+                    <input type="text" class="form-control" value={{row.date}} id="expense_date" name="expense_date" required>
+                  </div>
+
+              </div>
+
+              <div class="modal-footer">
+                        <button class="btn btn-secondary" name="return_to_budget" value="my_return_to_budget">Return to budget table</button>
+                        <button class="btn btn-primary" name="modify_record" value="my_modify_record">Submit</button>
+              </div>
+
+              {% block javascript %}
+              <script type="text/javascript">
+                  {% include "scripts/input_form.js" %}
+              </script>
+            {% endblock %}
+
+            </form>
+
+          </div>
+        </div>
+
+        {% endfor %}
+
+{% endblock %}
+

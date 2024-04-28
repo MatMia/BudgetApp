@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+{% endblock %}
+
+{% block content %}
+
+   <table class="table">
+
+    <thead>
+    <tr>
+        <td style="display:none;">assignment_rule_uuid</td>
+        <th>Keyword</th>
+        <th>Type</th>
+        <th>Category</th>
+        <th>Sub_category</th>
+    </tr>
+    </thead>
+    
+    <tbody>
+        
+        {% for row in assignment_rules_table.items %}
+        <tr>
+            <td style="display:none;">{{row.assignment_rule_uuid}}</td>
+            <td>{{row.keyword}}</td>
+            <td>{{row.type}}</td>
+            <td>{{row.category}}</td>
+            <td>{{row.sub_category}}</td>
+            <td>
+                <form method="POST">
+                <button class="btn btn-light" name="delete_assignment_rule_record" 
+                value={{row.assignment_rule_uuid}}>Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+
+    </tbody>
+
+    </table>
+
+    
+    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="@mdo">Add assignment rule</button>
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">New assignment rule</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form method="POST" autocomplete="off">
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+                  <label for="key_word_name" class="col-form-label">Key_word:</label>
+                  <input type="text" class="form-control" name="key_word_name" required>
+                </div>
+                
+                <div class="input-group mb-3">
+                  <label class="input-group-text" for="inputGroupSelect01">Type</label>
+                  <select class="form-select" id="expense_type" name="expense_type" required>
+                    {% for type in types_table.items %}
+                    <option>{{type.name}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="input-group mb-3">
+                  <label class="input-group-text" for="inputGroupSelect01">Category</label>
+                  <select class="form-select" id="expense_category" name="expense_category" required>
+                  </select>
+                </div>
+
+                <div class="input-group mb-3">
+                  <label class="input-group-text" for="inputGroupSelect01">Sub_category:</label>
+                  <select class="form-select" id ="expense_sub_category" name="expense_sub_category" required>
+                  </select>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" name="add_assignment_rule" value="my_assignment_rule">Submit</button>
+            </div>
+
+            {% block javascript %}
+              <script type="text/javascript">
+                  {% include "scripts/input_form.js" %}
+              </script>
+            {% endblock %}
+
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+{% endblock %}
+

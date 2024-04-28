@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+{% endblock %}
+
+
+{% block content %}
+
+
+   <hr class="text-danger border-2 opacity-50">
+
+    <form method="POST" autocomplete="off">
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Insert your input name:</label>
+            </div>
+            <div class="mb-3">
+                <input type="text" class="{{validity_class_name}}" name="expense_name" placeholder="Expense Name" required>
+                <div class="invalid-feedback">{{invalid_feedback_name}}</div>
+            </div>
+
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Insert your input value:</label>
+            </div>
+            <div class="input-group mb-3">
+                <select class="input-group-text" name="expense_value_type" id="expense_value_type">
+                    <option>-</option>
+                     <option>+</option>
+                </select>
+                <input type="text" class="{{validity_class_value}}" name="expense_value" placeholder="Expense Value (in PLN)" required>
+                <div class="invalid-feedback">{{invalid_feedback_value}}</div>
+            </div>
+
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Insert your input type:</label>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Type</label>
+                <select class="form-select" id='expense_type' name="expense_type" value="my_type" required>
+                    {% for type in types.items %}
+                  <option>{{type.name}}</option>
+                  {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Insert your input category:</label>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Category</label>
+                <select class="form-select" id='expense_category' name="expense_category" value="my_category" required>
+                </select>
+              </div>
+
+            <div class="mb-3">
+                <label for="formGroupExampleInput" class="form-label">Insert your input sub-category:</label>
+            </div>
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="inputGroupSelect01">Sub-category</label>
+                <select class="form-select" id='expense_sub_category' name="expense_sub_category" value="my_sub_category">
+                </select>
+            </div>
+            
+                   <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Insert your expense date:</label>
+                    </div>
+                     <div class="form-group">
+                       <input class="form-control" id="expense_date" name="expense_date" placeholder="YYYY-MM-DD" type="text" required/>
+                     </div>    
+                             
+            <hr>
+
+            <button class="btn btn-secondary" name="btn"
+            value="submit_form">Submit</button>
+
+            {% block javascript %}
+                <script type="text/javascript">
+                    {% include "scripts/input_form.js" %}
+                </script>
+            {% endblock %}
+
+    </form>
+
+{% endblock %}
