@@ -3,4 +3,5 @@
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
-.__pycatche__/*
+__pycache__/
+.vscode/
